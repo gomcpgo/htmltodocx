@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>CSS</title>
+<style>
+  body { font: 12pt/1.5 "Helvetica Neue", Arial, sans-serif; color: #333333; background: #fafafa; margin: 40px; }
+  p { color: green; }
+  p.special { color: blue; }
+  #unique { color: red !important; }
+  div > p + p { font-style: italic; }
+  .box p { background-color: rgba(255, 0, 0, 0.5); }
+  h2 { font-size: 150%; font-weight: normal; text-align: center; }
+  a[href^="https"] { color: purple; text-decoration: none; }
+  li:first-child { font-weight: bold; }
+  li:last-child { text-decoration: line-through; }
+  li:not(.keep) { color: gray; }
+  .caps { font-variant: small-caps; }
+  .upper { text-transform: uppercase; }
+  .lower { text-transform: lowercase; }
+  .pre { white-space: pre; }
+  .preline { white-space: pre-line; }
+  .indent { margin-left: 1in; text-indent: 0.5in; line-height: 2; }
+  p::first-line { color: orange; }
+  p:hover { color: orange; }
+  @import url("nope.css");
+  @font-face { font-family: X; src: url(x.woff); }
+  @media (min-width: 100px) { p { color: orange; } }
+  span { color: var(--undefined); }
+  .gone { visibility: hidden; }
+  .blk { display: block; }
+</style>
+</head>
+<body>
+<p>Green by type.</p>
+<p class="special">Blue by class.</p>
+<p class="special" id="unique" style="color: black">Red by important.</p>
+<p style="color: #0af">Inline wins.</p>
+<div><p>First.</p><p>Second is italic.</p></div>
+<div class="box"><p>Translucent red on white.</p></div>
+<h2>Centred, not bold, 150%</h2>
+<p><a href="https://example.org/">Purple link without underline</a> and <a href="http://example.org/">a default link</a>.</p>
+<ul><li>bold first</li><li class="keep">kept</li><li>struck last</li></ul>
+<p><span class="caps">Small Caps</span> <span class="upper">upper</span> <span class="lower">LOWER</span></p>
+<p class="pre">keeps   spaces
+and lines</p>
+<p class="preline">drops   spaces
+keeps lines</p>
+<p class="indent">Indented one inch, first line half an inch more, double spaced.</p>
+<p class="gone">Invisible.</p>
+<p>before <span class="blk">block span</span> after</p>
+<p style="font-size: 2em">Twice the body size.</p>
+<p><font color="#ff0000" face="Courier New" size="5">Legacy font tag</font> <small>small</small> <big>big</big></p>
+<center>Centred by tag</center>
+<p align="justify">Justified by attribute.</p>
+</body>
+</html>

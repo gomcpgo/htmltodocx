@@ -1,0 +1,8 @@
+# Local comparison output and downloaded schemas. Files written by other
+# tools (pandoc, Word, LibreOffice) must never be committed; see docs/design.md.
+/oracle/
+
+*.test
+*.prof
+*.docx
+/html2docx

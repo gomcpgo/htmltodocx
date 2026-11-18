@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Quarterly   Report</title>
+<meta name="author" content="Ada Example">
+<meta name="keywords" content="report, sample">
+<style>
+  body { font-family: Georgia, serif; color: #222; }
+  h1 { color: #1a4f8b; }
+  .note { background-color: #fff3cd; border-left: 4px solid #e0a800; margin-left: 20px; }
+  .right { text-align: right; }
+  table.data td, table.data th { border: 1px solid #999; }
+  table.data tr:nth-child(even) td { background: #f2f2f2; }
+  .hidden { display: none; }
+  @media screen and (max-width: 600px) { p { color: red; } }
+  @media print { .screen-only { display: none; } }
+  a.plain { text-decoration: none; color: inherit; }
+  p > em.loud { text-transform: uppercase; font-weight: bold; }
+</style>
+</head>
+<body>
+<h1 id="top">Quarterly Report</h1>
+<p>This is   a <strong>bold</strong> claim, an <em>emphatic</em> one,
+and <u>underlined</u>, <s>struck</s>, H<sub>2</sub>O, E=mc<sup>2</sup>,
+<code>inline code</code>, <mark>marked</mark> and <span style="color: rgb(200, 0, 0); font-size: 18px">big red</span> text.</p>
+<p class="right">Right aligned. <em class="loud">loud</em></p>
+<p class="hidden">You should not see this.</p>
+<p class="screen-only">Nor this.</p>
+<div class="note">A note with a <a href="https://example.com/a b?q=1&amp;r=2" title="Example">link</a>,
+an <a href="#sec-2">internal link</a>, a <a href="#nowhere">dangling one</a> and a <a class="plain" href="mailto:a@example.com">plain one</a>.</div>
+
+<h2 id="sec-2">Lists &amp; things</h2>
+<ul>
+  <li>One</li>
+  <li>Two
+    <ol start="3" type="a">
+      <li>Nested c</li>
+      <li>Nested d<ul><li>Deep</li></ul></li>
+    </ol>
+  </li>
+  <li><p>Para one</p><p>Para two</p></li>
+  <li><input type="checkbox" checked> Done</li>
+  <li></li>
+</ul>
+<ol><li>First</li><li>Second</li></ol>
+<p>Between</p>
+<ol><li>Restarted</li></ol>
+
+<blockquote><p>Quoted text.</p><blockquote>Nested quote</blockquote></blockquote>
+<pre><code class="language-go">func main() {
+	fmt.Println("hi &amp; bye")
+}
+</code></pre>
+<hr>
+<dl><dt>Term</dt><dd>Definition</dd></dl>
+
+<h3>Tables</h3>
+<table class="data">
+<caption>Table 1. Sales</caption>
+<thead><tr><th>Region</th><th colspan="2">Sales</th></tr></thead>
+<tbody>
+<tr><td rowspan="2">North</td><td>Q1</td><td style="text-align:right">10</td></tr>
+<tr><td>Q2</td><td style="text-align:right">20</td></tr>
+<tr><td>South</td><td>Q1</td></tr>
+</tbody>
+</table>
+<table border="0"><tr><td>plain</td><td><table><tr><td>nested</td></tr></table></td></tr></table>
+
+<figure>
+<img alt="Red dot" width="40" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==">
+<figcaption>Figure 1. A dot</figcaption>
+</figure>
+<p>Missing: <img src="nope.png" alt="[missing image]"> line<br>break. <q>Quoted</q> &nbsp; nbsp.</p>
+<p dir="rtl" lang="ar">مرحبا بالعالم</p>
+<p style="page-break-before: always">New page.</p>
+</body>
+</html>

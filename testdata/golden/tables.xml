@@ -1,0 +1,451 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+<w:body>
+<w:tbl>
+<w:tblPr>
+<w:tblStyle w:val="TableGrid"/>
+<w:tblW w:w="0" w:type="auto"/>
+</w:tblPr>
+<w:tblGrid>
+<w:gridCol w:w="1500"/>
+<w:gridCol w:w="2256"/>
+<w:gridCol w:w="2256"/>
+</w:tblGrid>
+<w:tr>
+<w:trPr>
+<w:tblHeader/>
+</w:trPr>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="1500" w:type="dxa"/>
+</w:tcPr>
+<w:p>
+<w:pPr>
+<w:jc w:val="center"/>
+</w:pPr>
+<w:r>
+<w:rPr>
+<w:b/>
+<w:bCs/>
+</w:rPr>
+<w:t>A</w:t>
+</w:r>
+</w:p>
+</w:tc>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="2256" w:type="dxa"/>
+</w:tcPr>
+<w:p>
+<w:pPr>
+<w:jc w:val="center"/>
+</w:pPr>
+<w:r>
+<w:rPr>
+<w:b/>
+<w:bCs/>
+</w:rPr>
+<w:t>B</w:t>
+</w:r>
+</w:p>
+</w:tc>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="2256" w:type="dxa"/>
+</w:tcPr>
+<w:p>
+<w:pPr>
+<w:jc w:val="center"/>
+</w:pPr>
+<w:r>
+<w:rPr>
+<w:b/>
+<w:bCs/>
+</w:rPr>
+<w:t>C</w:t>
+</w:r>
+</w:p>
+</w:tc>
+</w:tr>
+<w:tr>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="1500" w:type="dxa"/>
+</w:tcPr>
+<w:p>
+<w:r>
+<w:t>1</w:t>
+</w:r>
+</w:p>
+</w:tc>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="2256" w:type="dxa"/>
+</w:tcPr>
+<w:p>
+<w:r>
+<w:t>2</w:t>
+</w:r>
+</w:p>
+</w:tc>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="2256" w:type="dxa"/>
+</w:tcPr>
+<w:p>
+<w:r>
+<w:t>3</w:t>
+</w:r>
+</w:p>
+</w:tc>
+</w:tr>
+</w:tbl>
+<w:p/>
+<w:tbl>
+<w:tblPr>
+<w:tblStyle w:val="TablePlain"/>
+<w:tblW w:w="9026" w:type="dxa"/>
+<w:tblBorders>
+<w:top w:val="single" w:sz="12" w:space="0" w:color="000000"/>
+<w:left w:val="single" w:sz="12" w:space="0" w:color="000000"/>
+<w:bottom w:val="single" w:sz="12" w:space="0" w:color="000000"/>
+<w:right w:val="single" w:sz="12" w:space="0" w:color="000000"/>
+</w:tblBorders>
+</w:tblPr>
+<w:tblGrid>
+<w:gridCol w:w="2256"/>
+<w:gridCol w:w="2256"/>
+<w:gridCol w:w="2256"/>
+<w:gridCol w:w="2256"/>
+</w:tblGrid>
+<w:tr>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="4512" w:type="dxa"/>
+<w:gridSpan w:val="2"/>
+<w:vMerge w:val="restart"/>
+<w:tcBorders>
+<w:bottom w:val="single" w:sz="6" w:space="0" w:color="CCCCCC"/>
+</w:tcBorders>
+</w:tcPr>
+<w:p>
+<w:r>
+<w:t>Big</w:t>
+</w:r>
+</w:p>
+</w:tc>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="2256" w:type="dxa"/>
+<w:tcBorders>
+<w:bottom w:val="single" w:sz="6" w:space="0" w:color="CCCCCC"/>
+</w:tcBorders>
+</w:tcPr>
+<w:p>
+<w:r>
+<w:t>x</w:t>
+</w:r>
+</w:p>
+</w:tc>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="2256" w:type="dxa"/>
+</w:tcPr>
+<w:p/>
+</w:tc>
+</w:tr>
+<w:tr>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="4512" w:type="dxa"/>
+<w:gridSpan w:val="2"/>
+<w:vMerge/>
+<w:tcBorders>
+<w:bottom w:val="single" w:sz="6" w:space="0" w:color="CCCCCC"/>
+</w:tcBorders>
+</w:tcPr>
+<w:p/>
+</w:tc>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="2256" w:type="dxa"/>
+<w:tcBorders>
+<w:bottom w:val="single" w:sz="6" w:space="0" w:color="CCCCCC"/>
+</w:tcBorders>
+</w:tcPr>
+<w:p>
+<w:r>
+<w:t>y</w:t>
+</w:r>
+</w:p>
+</w:tc>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="2256" w:type="dxa"/>
+</w:tcPr>
+<w:p/>
+</w:tc>
+</w:tr>
+<w:tr>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="2256" w:type="dxa"/>
+<w:tcBorders>
+<w:bottom w:val="single" w:sz="6" w:space="0" w:color="CCCCCC"/>
+</w:tcBorders>
+</w:tcPr>
+<w:p>
+<w:r>
+<w:t>p</w:t>
+</w:r>
+</w:p>
+</w:tc>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="2256" w:type="dxa"/>
+<w:tcBorders>
+<w:bottom w:val="single" w:sz="6" w:space="0" w:color="CCCCCC"/>
+</w:tcBorders>
+</w:tcPr>
+<w:p>
+<w:r>
+<w:t>q</w:t>
+</w:r>
+</w:p>
+</w:tc>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="2256" w:type="dxa"/>
+<w:tcBorders>
+<w:bottom w:val="single" w:sz="6" w:space="0" w:color="CCCCCC"/>
+</w:tcBorders>
+</w:tcPr>
+<w:p>
+<w:r>
+<w:t>r</w:t>
+</w:r>
+</w:p>
+</w:tc>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="2256" w:type="dxa"/>
+<w:tcBorders>
+<w:bottom w:val="single" w:sz="6" w:space="0" w:color="CCCCCC"/>
+</w:tcBorders>
+</w:tcPr>
+<w:p>
+<w:r>
+<w:t>extra</w:t>
+</w:r>
+</w:p>
+</w:tc>
+</w:tr>
+</w:tbl>
+<w:p/>
+<w:tbl>
+<w:tblPr>
+<w:tblStyle w:val="TableGrid"/>
+<w:tblW w:w="0" w:type="auto"/>
+</w:tblPr>
+<w:tblGrid>
+<w:gridCol w:w="9026"/>
+</w:tblGrid>
+<w:tr>
+<w:trPr>
+<w:tblHeader/>
+</w:trPr>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="0" w:type="auto"/>
+<w:shd w:val="clear" w:color="auto" w:fill="EEEEFF"/>
+</w:tcPr>
+<w:p>
+<w:pPr>
+<w:jc w:val="center"/>
+</w:pPr>
+<w:r>
+<w:rPr>
+<w:b/>
+<w:bCs/>
+</w:rPr>
+<w:t>Head</w:t>
+</w:r>
+</w:p>
+</w:tc>
+</w:tr>
+<w:tr>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="0" w:type="auto"/>
+<w:shd w:val="clear" w:color="auto" w:fill="FFEEEE"/>
+<w:vAlign w:val="bottom"/>
+</w:tcPr>
+<w:p>
+<w:r>
+<w:t>Body 1</w:t>
+</w:r>
+</w:p>
+</w:tc>
+</w:tr>
+<w:tr>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="0" w:type="auto"/>
+</w:tcPr>
+<w:p>
+<w:r>
+<w:t>Body 2</w:t>
+</w:r>
+</w:p>
+</w:tc>
+</w:tr>
+<w:tr>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="0" w:type="auto"/>
+<w:shd w:val="clear" w:color="auto" w:fill="EEEEFF"/>
+</w:tcPr>
+<w:p>
+<w:r>
+<w:t>Foot</w:t>
+</w:r>
+</w:p>
+</w:tc>
+</w:tr>
+</w:tbl>
+<w:p/>
+<w:tbl>
+<w:tblPr>
+<w:tblStyle w:val="TableGrid"/>
+<w:tblW w:w="0" w:type="auto"/>
+</w:tblPr>
+<w:tblGrid>
+<w:gridCol w:w="4513"/>
+<w:gridCol w:w="4513"/>
+</w:tblGrid>
+<w:tr>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="0" w:type="auto"/>
+</w:tcPr>
+<w:p>
+<w:r>
+<w:t>Runs past the end</w:t>
+</w:r>
+</w:p>
+</w:tc>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="0" w:type="auto"/>
+</w:tcPr>
+<w:p>
+<w:r>
+<w:t>only row</w:t>
+</w:r>
+</w:p>
+</w:tc>
+</w:tr>
+</w:tbl>
+<w:p/>
+<w:tbl>
+<w:tblPr>
+<w:tblStyle w:val="TableGrid"/>
+<w:tblW w:w="0" w:type="auto"/>
+</w:tblPr>
+<w:tblGrid>
+<w:gridCol w:w="9026"/>
+</w:tblGrid>
+<w:tr>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="0" w:type="auto"/>
+</w:tcPr>
+<w:p>
+<w:r>
+<w:t>one</w:t>
+</w:r>
+</w:p>
+</w:tc>
+</w:tr>
+</w:tbl>
+<w:p/>
+<w:tbl>
+<w:tblPr>
+<w:tblStyle w:val="TableGrid"/>
+<w:tblW w:w="0" w:type="auto"/>
+</w:tblPr>
+<w:tblGrid>
+<w:gridCol w:w="9026"/>
+</w:tblGrid>
+<w:tr>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="0" w:type="auto"/>
+</w:tcPr>
+<w:p>
+<w:r>
+<w:t>two, right after</w:t>
+</w:r>
+</w:p>
+</w:tc>
+</w:tr>
+</w:tbl>
+<w:p>
+<w:pPr>
+<w:pStyle w:val="Caption"/>
+<w:keepNext/>
+<w:jc w:val="center"/>
+</w:pPr>
+<w:r>
+<w:t>Empty table</w:t>
+</w:r>
+</w:p>
+<w:tbl>
+<w:tblPr>
+<w:tblStyle w:val="TableGrid"/>
+<w:tblW w:w="0" w:type="auto"/>
+</w:tblPr>
+<w:tblGrid>
+<w:gridCol w:w="9026"/>
+</w:tblGrid>
+<w:tr>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="0" w:type="auto"/>
+</w:tcPr>
+<w:p>
+<w:r>
+<w:t>Outer</w:t>
+</w:r>
+</w:p>
+<w:tbl>
+<w:tblPr>
+<w:tblStyle w:val="TableGrid"/>
+<w:tblW w:w="0" w:type="auto"/>
+</w:tblPr>
+<w:tblGrid>
+<w:gridCol w:w="8810"/>
+</w:tblGrid>
+<w:tr>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="0" w:type="auto"/>
+</w:tcPr>
+<w:p>
+<w:r>
+<w:t>Inner</w:t>
+</w:r>
+</w:p>
+</w:tc>
+</w:tr>
+</w:tbl>
+<w:p/>
+</w:tc>
+</w:tr>
+</w:tbl>
+<w:sectPr>
+<w:pgSz w:w="11906" w:h="16838"/>
+<w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="708" w:footer="708" w:gutter="0"/>
+</w:sectPr>
+</w:body>
+</w:document>

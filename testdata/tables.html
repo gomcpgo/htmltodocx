@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<title>Tables</title>
+<style>
+  .lined td { border-bottom: 1px solid #cccccc; }
+  .lined { border: 2px solid black; width: 100%; }
+  .striped tr:nth-child(odd) { background-color: #eef; }
+</style>
+<table>
+  <colgroup><col width="100"><col span="2" style="width: 25%"></colgroup>
+  <tr><th>A</th><th>B</th><th>C</th></tr>
+  <tr><td>1</td><td>2</td><td>3</td></tr>
+</table>
+<table class="lined">
+  <tr><td colspan="2" rowspan="2">Big</td><td>x</td></tr>
+  <tr><td>y</td></tr>
+  <tr><td>p</td><td>q</td><td>r</td><td>extra</td></tr>
+</table>
+<table class="striped" border="1">
+  <thead><tr><th>Head</th></tr></thead>
+  <tfoot><tr><td>Foot</td></tr></tfoot>
+  <tbody><tr><td bgcolor="#ffeeee" valign="bottom">Body 1</td></tr><tr><td>Body 2</td></tr></tbody>
+</table>
+<table><tr><td rowspan="5">Runs past the end</td><td>only row</td></tr></table>
+<table><tr><td>one</td></tr></table><table><tr><td>two, right after</td></tr></table>
+<table><caption>Empty table</caption></table>
+<table><tr><td>Outer<table><tr><td>Inner</td></tr></table></td></tr></table>

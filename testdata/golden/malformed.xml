@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+<w:body>
+<w:p>
+<w:r>
+<w:t xml:space="preserve">Unclosed paragraph </w:t>
+</w:r>
+<w:r>
+<w:rPr>
+<w:b/>
+<w:bCs/>
+</w:rPr>
+<w:t xml:space="preserve">bold </w:t>
+</w:r>
+<w:r>
+<w:rPr>
+<w:b/>
+<w:bCs/>
+<w:i/>
+<w:iCs/>
+</w:rPr>
+<w:t>bold italic</w:t>
+</w:r>
+<w:r>
+<w:rPr>
+<w:i/>
+<w:iCs/>
+</w:rPr>
+<w:t xml:space="preserve"> italic only</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:r>
+<w:t>div inside</w:t>
+</w:r>
+</w:p>
+<w:tbl>
+<w:tblPr>
+<w:tblStyle w:val="TableGrid"/>
+<w:tblW w:w="0" w:type="auto"/>
+</w:tblPr>
+<w:tblGrid>
+<w:gridCol w:w="4513"/>
+<w:gridCol w:w="4513"/>
+</w:tblGrid>
+<w:tr>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="0" w:type="auto"/>
+</w:tcPr>
+<w:p>
+<w:r>
+<w:t>cell</w:t>
+</w:r>
+</w:p>
+</w:tc>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="0" w:type="auto"/>
+</w:tcPr>
+<w:p>
+<w:r>
+<w:t>cell 2</w:t>
+</w:r>
+</w:p>
+</w:tc>
+</w:tr>
+<w:tr>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="0" w:type="auto"/>
+</w:tcPr>
+<w:p>
+<w:r>
+<w:t>row 2</w:t>
+</w:r>
+</w:p>
+</w:tc>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="0" w:type="auto"/>
+</w:tcPr>
+<w:p/>
+</w:tc>
+</w:tr>
+</w:tbl>
+<w:p>
+<w:pPr>
+<w:pStyle w:val="ListParagraph"/>
+<w:numPr>
+<w:ilvl w:val="0"/>
+<w:numId w:val="1"/>
+</w:numPr>
+</w:pPr>
+<w:r>
+<w:t>one</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:pStyle w:val="ListParagraph"/>
+<w:numPr>
+<w:ilvl w:val="0"/>
+<w:numId w:val="1"/>
+</w:numPr>
+</w:pPr>
+<w:r>
+<w:t>two</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:r>
+<w:t xml:space="preserve">custom element text script link bad url broken image x+1 </w:t>
+</w:r>
+<w:bookmarkStart w:id="1" w:name="a_b__1"/>
+<w:bookmarkEnd w:id="1"/>
+<w:r>
+<w:t xml:space="preserve">odd id </w:t>
+</w:r>
+<w:hyperlink w:anchor="a_b__1" w:history="1">
+<w:r>
+<w:rPr>
+<w:rStyle w:val="Hyperlink"/>
+</w:rPr>
+<w:t>to odd id</w:t>
+</w:r>
+</w:hyperlink>
+<w:r>
+<w:t xml:space="preserve"> &amp; &lt; &gt; &quot; � 😀 control: not a heading</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:r>
+<w:t>trailing text</w:t>
+</w:r>
+</w:p>
+<w:sectPr>
+<w:pgSz w:w="11906" w:h="16838"/>
+<w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="708" w:footer="708" w:gutter="0"/>
+</w:sectPr>
+</w:body>
+</w:document>
