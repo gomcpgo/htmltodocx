@@ -87,12 +87,15 @@ func TestParseLength(t *testing.T) {
 
 func TestParseDeclarations(t *testing.T) {
 	got := ParseDeclarations(`COLOR: Red ; font-family: "A;B", serif; background: url("x;y.png") #fff;
-		margin:0 !IMPORTANT; --custom: 1; width: var(--w); broken; : nothing; empty: ;`)
+		margin:0 !IMPORTANT; --custom: 1; --Brand-Color: #ABC !important; width: var(--w); broken; : nothing; empty: ;`)
 	want := []Decl{
 		{"color", "Red", false},
 		{"font-family", `"A;B", serif`, false},
 		{"background", `url("x;y.png") #fff`, false},
 		{"margin", "0", true},
+		{"--custom", "1", false},
+		{"--Brand-Color", "#ABC", true}, // custom property names are case sensitive
+		{"width", "var(--w)", false},
 	}
 	if len(got) != len(want) {
 		t.Fatalf("got %d declarations %+v, want %d", len(got), got, len(want))

@@ -100,6 +100,8 @@ type conv struct {
 	opt      Options
 	sheet    *css.Stylesheet
 	matchBuf []css.Matched
+	declBuf  []css.Decl // an element's declarations in cascade order
+	varBytes int        // bytes produced by var() substitution so far
 	rootPt   float64
 	doc      *model.Document
 

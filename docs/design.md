@@ -78,6 +78,12 @@ Width: tables shrink to fit their content, as in a browser, unless a width is gi
 
 `internal/css` is a small engine written for this job: a tolerant stylesheet parser, selectors with specificity, and a matcher over the parser's nodes. Rules are indexed by the id, class or tag of their last compound selector, so an element only tests rules that could match it. Matching one selector against one element has a fixed work budget, which stops stylesheets built from long chains of descendant combinators from taking exponential time.
 
+CSS variables follow the Custom Properties specification. `--name` declarations take part in the cascade like any property (specificity, `!important`) and inherit. Each element that defines variables gets an immutable scope pointing at its nearest defining ancestor; values are resolved when the scope is built, so a descendant inherits the resolved value rather than re-resolving the reference in its own context. Variables in a cycle are invalid, and an invalid variable still hides the one it would inherit. Other declarations have `var()` substituted just before they are applied.
+
+One deliberate departure: a declaration whose `var()` cannot be resolved should make the property `unset`. The converter does not implement `inherit`, `initial` or `unset` for any property yet, so such a declaration is dropped and the previous winner stays. Variables matter here because of what models write: a print rule such as `th { background:#fff !important; color:var(--primary) !important }`, with variables dropped, left the screen rule's white text on a white cell.
+
+Substitution is bounded for hostile input: one substituted value may not exceed 8 KB (`css.MaxVarLength`), fallbacks nest at most 32 deep, and one conversion produces at most 32 MB of substituted text before further `var()` references are ignored with a warning. Variables are resolved in name order so output stays reproducible.
+
 The document is treated as print media: `@media print` and `@media all` apply; screen-only blocks and anything with a feature query (`min-width` and so on) do not, because those are written for viewport sizes that mean nothing on paper.
 
 ### OOXML writing

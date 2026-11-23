@@ -83,11 +83,13 @@ Selectors: type, class, id, attribute (`[a]`, `=`, `~=`, `|=`, `^=`, `$=`, `*=`)
 
 Properties: `color`, `background-color`, `font-family`, `font-size`, `font-weight`, `font-style`, `font` , `font-variant: small-caps`, `text-transform`, `text-decoration`, `text-align`, `vertical-align`, `line-height`, `text-indent`, `margin-left`, `white-space`, `display` (`none`, block, inline), `visibility`, `direction`, `list-style-type`, `page-break-before/after`, `break-before/after`, `width`, `height`, and `border` in all its forms on tables and cells.
 
+Custom properties (`--name: value`) and `var(--name, fallback)` work in all of these. Variables cascade and inherit as in a browser and are resolved where they are defined. A `var()` that cannot be resolved drops its declaration; browsers would reset the property instead.
+
 Font, colour, size and line height set on `body` become the document's defaults rather than being repeated on every run, so the result stays small and easy to restyle in Word.
 
 ## Not yet supported
 
-Footnotes, syntax highlighting, a reference `.docx` for custom styles, table of contents fields, SVG, MathML (its text is kept), floats and positioning, `calc()` and CSS variables, cell padding. Unsupported markup degrades to its text and is reported through `Warn`.
+Footnotes, syntax highlighting, a reference `.docx` for custom styles, table of contents fields, SVG, MathML (its text is kept), floats and positioning, `calc()`, cell padding. Unsupported markup degrades to its text and is reported through `Warn`.
 
 HTML nested more than 512 elements deep is rejected by the parser and `Convert` returns an error.
 

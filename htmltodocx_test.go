@@ -467,6 +467,108 @@ func TestCSSModes(t *testing.T) {
 	}
 }
 
+func TestCSSVariables(t *testing.T) {
+	tests := []struct {
+		name    string
+		html    string
+		want    []string
+		wantNot []string
+	}{
+		{
+			name: "defined on root, used in a rule",
+			html: `<style>:root{--navy:#1a2b4c} h2{color:var(--navy)}</style><h2>x</h2>`,
+			want: []string{`<w:color w:val="1A2B4C"/>`},
+		},
+		{
+			name: "inherited from an ancestor",
+			html: `<div style="--c:#00ff00"><section><p style="color:var(--c)">x</p></section></div>`,
+			want: []string{`<w:color w:val="00FF00"/>`},
+		},
+		{
+			name: "redefined on a descendant",
+			html: `<style>:root{--c:#ff0000} .in{--c:#0000ff} p{color:var(--c)}</style><p>a</p><div class="in"><p>b</p></div>`,
+			want: []string{`<w:color w:val="FF0000"/></w:rPr><w:t>a</w:t>`, `<w:color w:val="0000FF"/></w:rPr><w:t>b</w:t>`},
+		},
+		{
+			name: "custom properties follow specificity",
+			html: `<style>#x{--c:#00ff00} p{--c:#ff0000} p{color:var(--c)}</style><p id="x">x</p>`,
+			want: []string{`<w:color w:val="00FF00"/>`},
+		},
+		{
+			// Per the spec a variable's value is resolved where it is defined,
+			// and descendants inherit the result.
+			name: "resolved where defined",
+			html: `<div style="--base:#ff0000; --text:var(--base)"><p style="--base:#0000ff; color:var(--text)">x</p></div>`,
+			want: []string{`<w:color w:val="FF0000"/>`},
+		},
+		{
+			name: "fallback when undefined",
+			html: `<p style="color:var(--nope, #123456)">x</p>`,
+			want: []string{`<w:color w:val="123456"/>`},
+		},
+		{
+			name: "in a shorthand and a background",
+			html: `<style>:root{--bg:#eef6ff;--f:"Georgia", serif} p{background:var(--bg);font:italic 12pt var(--f)}</style><p>x</p>`,
+			want: []string{`w:fill="EEF6FF"`, `w:ascii="Georgia"`, `<w:i/>`},
+		},
+		{
+			// The case found in model output: the print rule must win, otherwise
+			// the screen rule's white text lands on a white page.
+			name: "important print rule with a variable beats the screen rule",
+			html: `<style>:root{--primary:#0f4c81} th{background:var(--primary);color:#ffffff}
+				@media print{th{background:#ffffff !important;color:var(--primary) !important}}</style>
+				<table><tr><th>Phase</th></tr></table>`,
+			want:    []string{`<w:color w:val="0F4C81"/>`},
+			wantNot: []string{`<w:color w:val="FFFFFF"/>`},
+		},
+		{
+			name: "cyclic variables are invalid and use the fallback",
+			html: `<p style="--a:var(--b);--b:var(--a);color:var(--a, #654321)">x</p>`,
+			want: []string{`<w:color w:val="654321"/>`},
+		},
+		{
+			name:    "a variable that is invalid on a descendant hides the inherited one",
+			html:    `<div style="--c:#ff0000"><p style="--c:var(--nope);color:var(--c, #00aa00)">x</p></div>`,
+			want:    []string{`<w:color w:val="00AA00"/>`},
+			wantNot: []string{`FF0000`},
+		},
+		{
+			// The spec says such a declaration makes the property "unset". The
+			// converter does not implement unset for any property yet, so the
+			// declaration is dropped and the earlier one stays.
+			name: "undefined variable without fallback drops the declaration",
+			html: `<style>p{color:#00ff00} p{color:var(--nope)}</style><p>x</p>`,
+			want: []string{`<w:color w:val="00FF00"/>`},
+		},
+		{
+			name:    "ignored when CSS is off",
+			html:    `<p style="--c:#ff0000;color:var(--c)">x</p>`,
+			wantNot: []string{`FF0000`},
+		},
+	}
+	for _, tt := range tests {
+		var opts *Options
+		if tt.name == "ignored when CSS is off" {
+			opts = &Options{CSS: CSSNone}
+		}
+		got := body(t, tt.html, opts)
+		pos := 0
+		for _, w := range tt.want {
+			i := strings.Index(got[pos:], w)
+			if i < 0 {
+				t.Errorf("%s: missing %s (in order) in\n%s", tt.name, w, got)
+				break
+			}
+			pos += i + len(w)
+		}
+		for _, w := range tt.wantNot {
+			if strings.Contains(got, w) {
+				t.Errorf("%s: unexpected %s in\n%s", tt.name, w, got)
+			}
+		}
+	}
+}
+
 func TestBodyStylesBecomeDefaults(t *testing.T) {
 	parts := convert(t, `<body style="font-family: Georgia; color: #123456; font-size: 22pt"><p>x</p><h1>y</h1></body>`, nil)
 	doc, styles := string(parts["word/document.xml"]), string(parts["word/styles.xml"])

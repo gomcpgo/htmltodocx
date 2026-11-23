@@ -19,8 +19,11 @@ const (
 )
 
 // style is the part of an element's computed style that its descendants
-// inherit. It is copied on the way down the tree, so it holds no pointers.
+// inherit. It is copied on the way down the tree, so it holds no pointers
+// to anything that changes after it is built.
 type style struct {
+	vars *varScope // custom properties in effect
+
 	bold, italic, underline, strike model.Tri
 	smallCaps, caps                 model.Tri
 	lower                           bool // text-transform: lowercase
@@ -293,20 +296,41 @@ func (c *conv) computeStyle(n *html.Node, parent *style) (style, box) {
 	if c.sheet != nil {
 		c.matchBuf = c.sheet.Match(n, c.matchBuf)
 	}
+	ordered := c.declBuf[:0]
 	for pass := 0; pass < 2; pass++ {
 		important := pass == 1
 		for i := range c.matchBuf {
 			for _, d := range c.matchBuf[i].Decls {
 				if d.Important == important {
-					c.applyDecl(&st, &bx, parent, d)
+					ordered = append(ordered, d)
 				}
 			}
 		}
 		for _, d := range inline {
 			if d.Important == important {
-				c.applyDecl(&st, &bx, parent, d)
+				ordered = append(ordered, d)
 			}
 		}
+	}
+	c.declBuf = ordered
+
+	// Custom properties first, since this element's own declarations may use
+	// them. A var() that cannot be resolved drops its declaration. The
+	// specification says the property should become "unset" instead, but no
+	// property supports unset yet (see applyDecl).
+	st.vars = c.customProperties(parent.vars, ordered)
+	for _, d := range ordered {
+		if css.IsCustomProperty(d.Prop) {
+			continue
+		}
+		if css.HasVar(d.Value) {
+			v, ok := c.substitute(d.Value, st.vars.lookup)
+			if !ok {
+				continue
+			}
+			d.Value = v
+		}
+		c.applyDecl(&st, &bx, parent, d)
 	}
 
 	if tag == "html" || tag == "body" {

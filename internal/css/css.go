@@ -22,8 +22,9 @@ type Decl struct {
 }
 
 // ParseDeclarations parses the contents of a style attribute or of a rule
-// body. Declarations it cannot use (custom properties, values that depend on
-// var()) are dropped.
+// body. Custom properties ("--name") keep the case of their name, which is
+// significant; values that use var() are kept as written and resolved by the
+// caller with SubstituteVars.
 func ParseDeclarations(s string) []Decl {
 	var out []Decl
 	for len(s) > 0 {
@@ -38,7 +39,10 @@ func ParseDeclarations(s string) []Decl {
 		if colon <= 0 {
 			continue
 		}
-		prop := strings.ToLower(strings.TrimSpace(part[:colon]))
+		prop := strings.TrimSpace(part[:colon])
+		if !IsCustomProperty(prop) {
+			prop = strings.ToLower(prop)
+		}
 		val := strings.TrimSpace(part[colon+1:])
 		important := false
 		if bang := strings.LastIndexByte(val, '!'); bang >= 0 &&
@@ -46,7 +50,7 @@ func ParseDeclarations(s string) []Decl {
 			important = true
 			val = strings.TrimSpace(val[:bang])
 		}
-		if prop == "" || val == "" || strings.HasPrefix(prop, "--") || strings.Contains(val, "var(") {
+		if prop == "" || val == "" {
 			continue
 		}
 		out = append(out, Decl{prop, val, important})
