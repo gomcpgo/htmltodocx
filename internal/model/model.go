@@ -139,10 +139,18 @@ type ParaProps struct {
 	FirstLine       int // negative values are a hanging indent
 	Line            int // line spacing in 240ths of a line; 0 means unset
 	Shade           string
+	Tabs            []TabStop // custom tab stops, in increasing position
 	KeepNext        bool
 	PageBreakBefore bool
 	Bidi            bool
 	Num             *NumRef
+}
+
+// TabStop is a custom tab stop. Pos is in twips from the start of the text
+// area; Align is "left", "center" or "right".
+type TabStop struct {
+	Pos   int
+	Align string
 }
 
 // HorizontalRule is a thematic break.

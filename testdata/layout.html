@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Layout sample</title>
+<style>
+  :root { --ink: #1b2938; --accent: #126d75; --pale: #eef6f7; }
+  body { font-family: Arial, sans-serif; color: var(--ink); }
+  .banner { background: linear-gradient(135deg, #0b1f3a, #16345c); color: #fff; padding: 16px; }
+  .meta { display: flex; justify-content: space-between; }
+  .pills { display: flex; gap: 6px; }
+  .pill { display: inline-block; background: rgba(255, 255, 255, .15); padding: 2px 8px; }
+  h2 { display: flex; align-items: center; gap: 8px; color: var(--accent); }
+  .num { display: inline-flex; background: var(--accent); color: #fff; border-radius: 50%; }
+  .job-head { display: flex; justify-content: space-between; }
+  .skills { display: grid; grid-template-columns: 110px 1fr; gap: 4px 12px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .card { background: var(--pale); }
+  .three { display: flex; justify-content: space-between; }
+  .stack { display: flex; flex-direction: column; }
+</style>
+</head>
+<body>
+<header class="banner">
+  <h1>Quarterly review</h1>
+  <div class="meta"><span>Prepared for the board</span><span>Issued November 2026</span></div>
+  <div class="pills"><span class="pill">Win</span><span class="pill">Watch</span><span class="pill">Risk</span></div>
+</header>
+<h2><span class="num">1</span>Summary</h2>
+<div class="job-head"><strong>Senior Engineer</strong><span>2020 – Present</span></div>
+<div class="skills"><strong>Core</strong><span>Go · PostgreSQL</span><strong>Focus areas</strong><span>APIs · Reliability</span></div>
+<div class="cards">
+  <div class="card"><strong>$6.5M</strong><div>Revenue</div></div>
+  <div class="card"><strong>1,240</strong><div>Customers</div></div>
+</div>
+<div class="three"><span>Left</span><span>Middle</span><span>Right</span></div>
+<div class="stack"><span>First line</span><span>Second line</span></div>
+</body>
+</html>

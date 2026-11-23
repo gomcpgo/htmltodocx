@@ -67,7 +67,17 @@ func turnOff(cur model.Tri, styleOn bool) model.Tri {
 
 // box is the part of the computed style that is not inherited.
 type box struct {
-	display     string // "", "none", "block" or "inline"
+	display string // "", "none", "block" or "inline"
+
+	// Flex and grid layout. layout is "flex" or "grid" for a block-level
+	// container; inlineBox marks inline-block, inline-flex and inline-grid,
+	// which are separate boxes inside a line.
+	layout      string
+	inlineBox   bool
+	flexColumn  bool   // flex-direction is column or column-reverse
+	justify     string // justify-content, lower case
+	gridCols    string // grid-template-columns as written
+	colGap      string // column gap as written
 	bg          string // RRGGBB, or "" for transparent
 	bgSet       bool
 	marginLeft  int // twips
@@ -966,9 +976,33 @@ func (c *conv) applyDecl(st *style, bx *box, parent *style, d css.Decl) {
 			bx.display = "none"
 		case "inline", "inline-block", "inline-flex", "inline-grid", "contents":
 			bx.display = "inline"
+			bx.layout, bx.inlineBox = "", lv != "inline" && lv != "contents"
 		case "block", "flex", "grid", "flow-root", "list-item":
 			bx.display = "block"
+			bx.layout, bx.inlineBox = "", false
+			if lv == "flex" || lv == "grid" {
+				bx.layout = lv
+			}
 		}
+	case "flex-direction":
+		bx.flexColumn = strings.HasPrefix(lv, "column")
+	case "flex-flow":
+		for _, t := range css.Fields(lv) {
+			if strings.HasPrefix(t, "row") || strings.HasPrefix(t, "column") {
+				bx.flexColumn = strings.HasPrefix(t, "column")
+			}
+		}
+	case "justify-content":
+		bx.justify = lv
+	case "grid-template-columns":
+		bx.gridCols = lv
+	case "gap", "grid-gap":
+		// "row column", or one value for both.
+		if f := css.Fields(lv); len(f) > 0 {
+			bx.colGap = f[len(f)-1]
+		}
+	case "column-gap", "grid-column-gap":
+		bx.colGap = lv
 	case "visibility":
 		if lv == "hidden" || lv == "collapse" {
 			bx.display = "none"

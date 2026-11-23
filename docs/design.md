@@ -54,6 +54,17 @@ The reader follows the CSS model: runs of collapsible white space become one spa
 
 Paragraphs are collected as a flat list of items and trimmed when the block ends. Text is appended to a byte slice, not concatenated, so thousands of small text nodes stay linear.
 
+### Flex and grid
+
+Word has no side-by-side layout for paragraphs, but flex and grid items must at least stay apart: in a browser each item is its own box, so `<span>Core</span><span>Go</span>` in a grid reads as two cells, while the plain white-space rules would glue it into "CoreGo". The converter follows CSS in treating every item as a separate box (text runs that are only white space are not items, empty items are skipped) and approximates the arrangement in `internal/dom/layout.go`:
+
+- If any item is block-level, or the flex direction is a column, or a grid has one column (the CSS default) or a width-dependent column count (`auto-fill`, `auto-fit`), every item becomes its own block. CSS "blockifies" flex and grid items, so this is the faithful reading when there is no horizontal layout.
+- A flex row of inline items stays one paragraph. With `justify-content: space-between`, `space-around` or `space-evenly`, items are separated by tabs; the last stop is right-aligned at the right edge and any in between are centred, which reproduces the common "title … date" line. Otherwise items are separated by a space, standing in for `gap`, and `justify-content: center` or `flex-end` aligns the paragraph.
+- A grid of inline items becomes one paragraph per grid row, items separated by tabs, with left tab stops where the columns start. Column widths come from `grid-template-columns` (lengths, percentages, `fr`, `minmax()` by its maximum, `repeat()` with a fixed count) and the column gap. At most 32 columns are taken from `repeat()`.
+- `inline-block`, `inline-flex` and `inline-grid` boxes stay inline, with a space inserted when a letter or digit would otherwise touch them, so badges and pills do not run into the next word ("1 Summary", not "1Summary").
+
+Tab stops are positions from the start of the text area, so they are computed from the paragraph indent and the width available in the current context (page or table cell).
+
 ### Lists
 
 Each HTML list becomes its own `w:num`, pointing at an abstract definition shared by every list of the same format. A separate `w:num` with a start override is how Word restarts numbering, so two `<ol>` elements never run on from each other, and `start` works. Bullet lists of one format share a single `w:num`.

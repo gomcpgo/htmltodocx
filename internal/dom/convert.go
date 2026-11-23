@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"golang.org/x/net/html"
 
@@ -58,6 +59,7 @@ const (
 	itemBreak
 	itemImage
 	itemBookmark
+	itemTab
 )
 
 type item struct {
@@ -73,7 +75,10 @@ type paraBuilder struct {
 	props     model.ParaProps
 	items     []item
 	lastSpace bool // the next collapsible space would be redundant
-	force     bool // keep the paragraph even if it ends up empty
+	// spaceAfterBox is set when an inline-block box has just ended: if the
+	// next text starts with a letter or digit, a space keeps the two apart.
+	spaceAfterBox bool
+	force         bool // keep the paragraph even if it ends up empty
 }
 
 // bctx is the context an element passes to its children. It is passed by
@@ -87,6 +92,7 @@ type bctx struct {
 	bidi      bool
 	indent    int
 	shade     string
+	tabs      []model.TabStop // tab stops for paragraphs started here
 	keepNext  bool
 	link      *linkRef
 	listLevel int // -1 outside lists
@@ -474,6 +480,9 @@ func (c *conv) generic(n *html.Node, bc bctx, st style, bx box, quote bool) {
 	if bx.bgSet {
 		st.runBg = bx.bg
 	}
+	if bx.inlineBox {
+		c.boxSpaceBefore(&bc)
+	}
 	bc.st = st
 	c.maybeBookmark(n, false)
 	if quote {
@@ -482,6 +491,9 @@ func (c *conv) generic(n *html.Node, bc bctx, st style, bx box, quote bool) {
 	c.children(n, bc)
 	if quote {
 		c.text("”", &bc)
+	}
+	if bx.inlineBox && c.para != nil {
+		c.para.spaceAfterBox = true
 	}
 }
 
@@ -522,9 +534,12 @@ func (c *conv) block(n *html.Node, bc bctx, st style, bx box, o blockOpts) {
 	}
 	c.maybeBookmark(n, o.bookmark)
 
-	if o.pre && st.ws == wsPre {
+	switch {
+	case o.pre && st.ws == wsPre:
 		c.preformatted(n, bc)
-	} else {
+	case bx.layout != "":
+		c.layoutChildren(n, bc, bx)
+	default:
 		c.children(n, bc)
 	}
 	c.flushPara()
@@ -582,6 +597,7 @@ func (c *conv) ensurePara(bc *bctx) {
 		FirstLine:  bc.firstLine,
 		Line:       bc.line,
 		Shade:      bc.shade,
+		Tabs:       bc.tabs,
 		KeepNext:   bc.keepNext,
 		Bidi:       bc.bidi,
 	}
@@ -661,6 +677,15 @@ func (c *conv) text(s string, bc *bctx) {
 		return
 	}
 
+	if c.para != nil && c.para.spaceAfterBox {
+		// White space in s separates the box by itself; only a word that
+		// would touch the box needs a space.
+		c.para.spaceAfterBox = false
+		if r, ok := firstVisibleRune(s); ok && !c.para.lastSpace && (unicode.IsLetter(r) || unicode.IsDigit(r)) {
+			c.addText(" ", bc, false)
+			c.para.lastSpace = true
+		}
+	}
 	keepNL := bc.st.ws == wsPreLine
 	last := c.para == nil || c.para.lastSpace
 	buf := make([]byte, 0, len(s))
@@ -766,6 +791,9 @@ func (c *conv) flushPara() {
 			content = true
 		case itemBreak:
 			in = &model.LineBreak{}
+			content = true
+		case itemTab:
+			in = &model.Text{Text: "\t", Props: it.rp}
 			content = true
 		case itemImage:
 			in = it.img

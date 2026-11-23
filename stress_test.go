@@ -64,6 +64,14 @@ func TestPathologicalInputs(t *testing.T) {
 		// Many variables redefined at every level of a deep tree, each read.
 		"vardeep": "<style>div{--a:var(--b, red);--b:var(--c, blue);--c:#123456;color:var(--a);background:var(--b)}</style>" +
 			strings.Repeat("<div>x", 500) + strings.Repeat("<p style='color:var(--a)'>y</p>", 5000),
+		// Long rows of flex items, spaced (tabs) and packed (spaces).
+		"flexrow": strings.Repeat(`<div style="display:flex;justify-content:space-between">`+strings.Repeat("<span>a</span><span></span>", 2000)+"</div>", 5) +
+			strings.Repeat(`<div style="display:flex">`+strings.Repeat("<b>a</b>", 5000)+"</div>", 5),
+		// Grids with absurd repeat() counts, and many rows of a real grid.
+		"gridrows": `<div style="display:grid;grid-template-columns:repeat(99999999, 1fr) repeat(3, repeat(40, 1px))">x</div>` +
+			strings.Repeat(`<div style="display:grid;grid-template-columns:100px 1fr 2fr">`+strings.Repeat("<i>a</i>", 3000)+"</div>", 5),
+		// Nested flex containers, each item a container again.
+		"flexnest":  strings.Repeat(`<div style="display:flex">`, 400) + "x" + strings.Repeat("</div>", 400),
 		"selectors": "<style>" + strings.Repeat("a", 10000) + strings.Repeat(" > b", 5000) + "{color:red}" + strings.Repeat("p,", 20000) + "p{color:red}</style><p>x",
 	}
 	for name, html := range cases {

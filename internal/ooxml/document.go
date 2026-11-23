@@ -120,6 +120,15 @@ func (d *docWriter) paragraph(p *model.Paragraph) {
 	if pp.Shade != "" {
 		b.s(`<w:shd w:val="clear" w:color="auto" w:fill="`, pp.Shade, `"/>`)
 	}
+	if len(pp.Tabs) > 0 {
+		b.s(`<w:tabs>`)
+		for _, t := range pp.Tabs {
+			b.s(`<w:tab w:val="`, t.Align, `" w:pos="`)
+			b.i(t.Pos)
+			b.s(`"/>`)
+		}
+		b.s(`</w:tabs>`)
+	}
 	if pp.Bidi {
 		b.s(`<w:bidi/>`)
 	}

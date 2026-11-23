@@ -79,7 +79,7 @@ func paragraphs(t testing.TB, html string) []string {
 	dec := xml.NewDecoder(bytes.NewReader(doc))
 	var out []string
 	var cur strings.Builder
-	inText := false
+	inText, inProps := false, false
 	for {
 		tok, err := dec.Token()
 		if err == io.EOF {
@@ -93,15 +93,21 @@ func paragraphs(t testing.TB, html string) []string {
 			switch v.Name.Local {
 			case "p":
 				cur.Reset()
+			case "pPr":
+				inProps = true // its w:tab elements are tab stops, not tabs
 			case "t":
 				inText = true
 			case "br":
 				cur.WriteByte('\n')
 			case "tab":
-				cur.WriteByte('\t')
+				if !inProps {
+					cur.WriteByte('\t')
+				}
 			}
 		case xml.EndElement:
 			switch v.Name.Local {
+			case "pPr":
+				inProps = false
 			case "p":
 				out = append(out, cur.String())
 			case "t":
@@ -681,6 +687,105 @@ func TestLightBodyTextOnDarkPage(t *testing.T) {
 	}
 	if len(warnings) == 0 {
 		t.Error("expected a warning about the dropped body colour")
+	}
+}
+
+// Flex and grid items are separate boxes in a browser even when the markup
+// has no white space between them. Word has no such layout, so rows of short
+// items become one line with tabs or spaces, and anything with block content
+// becomes one block per item.
+func TestFlexAndGrid(t *testing.T) {
+	tests := []struct {
+		name string
+		html string
+		want []string // paragraph texts
+		xml  []string // substrings of the body XML, in order
+	}{
+		{
+			name: "space-between pair is split by a right tab",
+			html: `<div style="display:flex;justify-content:space-between"><span>Senior Engineer</span><span>2020 – Present</span></div>`,
+			want: []string{"Senior Engineer\t2020 – Present"},
+			xml:  []string{`<w:tabs><w:tab w:val="right" w:pos="9026"/></w:tabs>`},
+		},
+		{
+			name: "white space between items does not count",
+			html: "<div style='display:flex;justify-content:space-between'>\n  <span>L</span>\n  <span>R</span>\n</div>",
+			want: []string{"L\tR"},
+		},
+		{
+			name: "three spaced items get centre and right stops",
+			html: `<div style="display:flex;justify-content:space-between"><b>a</b><b>b</b><b>c</b></div>`,
+			want: []string{"a\tb\tc"},
+			xml:  []string{`<w:tab w:val="center" w:pos="4513"/><w:tab w:val="right" w:pos="9026"/>`},
+		},
+		{
+			name: "packed items are separated by a space",
+			html: `<h2 style="display:flex;gap:10px"><span>1</span>Executive Summary</h2>`,
+			want: []string{"1 Executive Summary"},
+			xml:  []string{`<w:pStyle w:val="Heading2"/>`},
+		},
+		{
+			name: "centred flex row centres the line",
+			html: `<div style="display:flex;justify-content:center;gap:8px"><span>a</span><span>b</span></div>`,
+			want: []string{"a b"},
+			xml:  []string{`<w:jc w:val="center"/>`},
+		},
+		{
+			name: "hidden and empty items leave no tab behind",
+			html: `<div style="display:flex;justify-content:space-between"><span>L</span><span style="display:none">H</span><span></span><span>R</span><span></span></div>`,
+			want: []string{"L\tR"},
+		},
+		{
+			name: "items with block content become blocks",
+			html: `<div style="display:flex"><span>Alpha</span><div>Beta</div>Gamma</div>`,
+			want: []string{"Alpha", "Beta", "Gamma"},
+		},
+		{
+			name: "a column of inline items is one line each",
+			html: `<div style="display:flex;flex-direction:column"><span>One</span><span>Two</span></div>`,
+			want: []string{"One", "Two"},
+		},
+		{
+			name: "label and value grid keeps its rows and columns",
+			html: `<div style="display:grid;grid-template-columns:105px 1fr;gap:4px 10px"><strong>Core</strong><span>Go</span><strong>Focus</strong><span>APIs</span></div>`,
+			want: []string{"Core\tGo", "Focus\tAPIs"},
+			xml:  []string{`<w:tabs><w:tab w:val="left" w:pos="1725"/></w:tabs>`},
+		},
+		{
+			name: "equal grid columns",
+			html: `<div style="display:grid;grid-template-columns:repeat(3, 1fr)"><i>a</i><i>b</i><i>c</i><i>d</i></div>`,
+			want: []string{"a\tb\tc", "d"},
+			xml:  []string{`<w:tab w:val="left" w:pos="3009"/><w:tab w:val="left" w:pos="6017"/>`},
+		},
+		{
+			name: "a grid with no columns is one item per line",
+			html: `<div style="display:grid"><span>A</span><span>B</span></div>`,
+			want: []string{"A", "B"},
+		},
+		{
+			name: "inline blocks are separate boxes",
+			html: `<p><span style="display:inline-block">Win</span><span style="display:inline-flex">Watch</span><span style="display:inline-block">Risk</span>!</p>`,
+			want: []string{"Win Watch Risk!"},
+		},
+	}
+	for _, tt := range tests {
+		got := paragraphs(t, tt.html)
+		if strings.Join(got, "|") != strings.Join(tt.want, "|") {
+			t.Errorf("%s: paragraphs = %q, want %q", tt.name, got, tt.want)
+		}
+		if len(tt.xml) == 0 {
+			continue
+		}
+		doc := body(t, tt.html, nil)
+		pos := 0
+		for _, w := range tt.xml {
+			i := strings.Index(doc[pos:], w)
+			if i < 0 {
+				t.Errorf("%s: missing %s (in order) in\n%s", tt.name, w, doc)
+				break
+			}
+			pos += i + len(w)
+		}
 	}
 }
 
