@@ -569,6 +569,121 @@ func TestCSSVariables(t *testing.T) {
 	}
 }
 
+func TestBackgrounds(t *testing.T) {
+	tests := []struct {
+		name     string
+		html     string
+		want     []string // in order
+		wantNot  []string
+		wantWarn string // substring of a warning, if one is expected
+	}{
+		{
+			name: "gradient banner becomes its average colour",
+			html: `<header style="background:linear-gradient(135deg,#000000,#0000fe);color:#fff"><h1>Title</h1></header>`,
+			want: []string{`w:fill="00007F"`, `<w:color w:val="FFFFFF"/>`},
+		},
+		{
+			name: "gradient as background-image",
+			html: `<div style="background-image:linear-gradient(#ff0000,#ff0000)">x</div>`,
+			want: []string{`w:fill="FF0000"`},
+		},
+		{
+			name: "gradient layer is painted over the background colour",
+			html: `<div style="background:#ffffff linear-gradient(#000000,#000000);color:#fff">x</div>`,
+			want: []string{`w:fill="000000"`, `<w:color w:val="FFFFFF"/>`},
+		},
+		{
+			name: "image layers fall back to the colour",
+			html: `<div style="background:url(x.png) #123456">x</div>`,
+			want: []string{`w:fill="123456"`},
+		},
+		{
+			name: "translucent block background is blended over its parent's",
+			html: `<div style="background:#000000;color:#fff"><div style="background:rgba(255,255,255,0.2)">x</div></div>`,
+			want: []string{`w:fill="333333"`, `<w:color w:val="FFFFFF"/>`},
+		},
+		{
+			name: "translucent inline background is blended over its parent's",
+			html: `<div style="background:#000000;color:#fff">a <span style="background:rgba(255,255,255,.5)">b</span></div>`,
+			want: []string{`w:fill="000000"`, `w:fill="808080"`},
+		},
+		{
+			name:    "translucent text is blended over the background",
+			html:    `<div style="background:#000000"><p style="color:rgba(255,255,255,.5)">x</p></div>`,
+			want:    []string{`<w:color w:val="808080"/>`},
+			wantNot: []string{`FFFFFF`},
+		},
+		{
+			name: "light text on a coloured table row is kept",
+			html: `<table><tr style="background:#000000"><td style="color:#fff">x</td></tr></table>`,
+			want: []string{`<w:color w:val="FFFFFF"/>`},
+		},
+		{
+			name:     "white text with nothing drawn behind it loses its colour",
+			html:     `<p style="color:#ffffff">x</p>`,
+			wantNot:  []string{`<w:color`},
+			wantWarn: "FFFFFF",
+		},
+		{
+			name:     "dark text on a dark background loses its colour",
+			html:     `<div style="background:#000000"><p style="color:#111111">x</p></div>`,
+			want:     []string{`w:fill="000000"`},
+			wantNot:  []string{`<w:color`},
+			wantWarn: "111111",
+		},
+		{
+			name: "low but readable contrast is left alone",
+			html: `<p style="color:#999999">x</p>`,
+			want: []string{`<w:color w:val="999999"/>`},
+		},
+		{
+			// A background drawn only behind a run counts for that run.
+			name: "white text on a shaded run is kept",
+			html: `<p><span style="background:#000;color:#fff">x</span></p>`,
+			want: []string{`<w:color w:val="FFFFFF"/>`, `w:fill="000000"`},
+		},
+	}
+	for _, tt := range tests {
+		var warnings []string
+		got := body(t, tt.html, &Options{Warn: func(w Warning) { warnings = append(warnings, w.String()) }})
+		pos := 0
+		for _, w := range tt.want {
+			i := strings.Index(got[pos:], w)
+			if i < 0 {
+				t.Errorf("%s: missing %s (in order) in\n%s", tt.name, w, got)
+				break
+			}
+			pos += i + len(w)
+		}
+		for _, w := range tt.wantNot {
+			if strings.Contains(got, w) {
+				t.Errorf("%s: unexpected %s in\n%s", tt.name, w, got)
+			}
+		}
+		all := strings.Join(warnings, "\n")
+		if tt.wantWarn != "" && !strings.Contains(all, tt.wantWarn) {
+			t.Errorf("%s: no warning mentioning %s; got %q", tt.name, tt.wantWarn, warnings)
+		}
+		if tt.wantWarn == "" && strings.Contains(all, "invisible") {
+			t.Errorf("%s: unexpected warning %q", tt.name, warnings)
+		}
+	}
+}
+
+// A page background is not drawn, so light body text on a dark page would
+// otherwise become the document's default colour on a white page.
+func TestLightBodyTextOnDarkPage(t *testing.T) {
+	var warnings []string
+	parts := convert(t, `<body style="background:#111;color:#eeeeee"><p>x</p></body>`,
+		&Options{Warn: func(w Warning) { warnings = append(warnings, w.String()) }})
+	if styles := string(parts["word/styles.xml"]); strings.Contains(styles, "EEEEEE") {
+		t.Errorf("light body colour should not become the default: %s", styles)
+	}
+	if len(warnings) == 0 {
+		t.Error("expected a warning about the dropped body colour")
+	}
+}
+
 func TestBodyStylesBecomeDefaults(t *testing.T) {
 	parts := convert(t, `<body style="font-family: Georgia; color: #123456; font-size: 22pt"><p>x</p><h1>y</h1></body>`, nil)
 	doc, styles := string(parts["word/document.xml"]), string(parts["word/styles.xml"])

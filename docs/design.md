@@ -45,6 +45,8 @@ The model is the seam. The reader knows nothing about XML and the writer knows n
 - **Font sizes.** Absolute units are converted exactly (1px = 0.75pt). `em` and `%` are relative to the parent. With no CSS, text is 11pt. `rem` and the size keywords scale from the root size, which is 11pt unless `html` sets one.
 - **Page background and page margins are ignored.** `background` and `margin` on `html` and `body` describe the browser page, not paragraphs.
 - **White backgrounds are dropped** when nothing behind them is coloured. Many pages set `background: white` on wrappers; shading every paragraph white would be noise.
+- **Backgrounds are single colours.** Word shading cannot draw images or gradients. A gradient becomes the average of its stops (weighted by alpha, so transparent stops thin it rather than darken it), which is closest to the tone a reader sees; a gradient layer wins over a background colour in the same declaration because it is painted on top. Each element carries the colour drawn behind it (its backdrop), and translucent backgrounds and text colours are blended over that, not over white: a white 12% pill on a navy header is dark, not near-white.
+- **Unreadable text gets the automatic colour.** If a run's colour has a WCAG contrast ratio below 1.3 against the backdrop actually drawn, the colour is dropped with a warning, and Word's automatic colour (black, or white on dark shading) is used. The threshold is low on purpose, so faint but visible text is left alone. The same check applies to a body colour moved into the document defaults, since the page background is never drawn. Before this, model-written pages with gradient banners or dark page backgrounds produced white text on a white page.
 
 ### White space and blocks
 

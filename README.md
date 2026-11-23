@@ -81,7 +81,9 @@ The command loads images and stylesheets only from the input file's directory (o
 
 Selectors: type, class, id, attribute (`[a]`, `=`, `~=`, `|=`, `^=`, `$=`, `*=`), descendant, child `>`, sibling `+` and `~`, `:first-child`, `:last-child`, `:only-child`, `:nth-child()`, `:first-of-type`, `:last-of-type`, `:not()`, `:root`, `:link`, `:empty`. Specificity, source order and `!important` are honoured. `@media print` and `@media all` blocks apply; screen-only and width-dependent blocks do not.
 
-Properties: `color`, `background-color`, `font-family`, `font-size`, `font-weight`, `font-style`, `font` , `font-variant: small-caps`, `text-transform`, `text-decoration`, `text-align`, `vertical-align`, `line-height`, `text-indent`, `margin-left`, `white-space`, `display` (`none`, block, inline), `visibility`, `direction`, `list-style-type`, `page-break-before/after`, `break-before/after`, `width`, `height`, and `border` in all its forms on tables and cells.
+Properties: `color`, `background-color`, `background`, `background-image`, `font-family`, `font-size`, `font-weight`, `font-style`, `font` , `font-variant: small-caps`, `text-transform`, `text-decoration`, `text-align`, `vertical-align`, `line-height`, `text-indent`, `margin-left`, `white-space`, `display` (`none`, block, inline), `visibility`, `direction`, `list-style-type`, `page-break-before/after`, `break-before/after`, `width`, `height`, and `border` in all its forms on tables and cells.
+
+Backgrounds become shading. A gradient is drawn as the average of its colours, and translucent colours are blended over whatever is behind them, as on screen. Text whose colour would be practically invisible on the background actually drawn (for example light text meant for a page background or image, neither of which Word can show) falls back to Word's automatic colour, with a warning.
 
 Custom properties (`--name: value`) and `var(--name, fallback)` work in all of these. Variables cascade and inherit as in a browser and are resolved where they are defined. A `var()` that cannot be resolved drops its declaration; browsers would reset the property instead.
 

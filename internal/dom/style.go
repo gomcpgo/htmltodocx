@@ -24,6 +24,15 @@ const (
 type style struct {
 	vars *varScope // custom properties in effect
 
+	// backdrop is the colour drawn behind this element's content (RRGGBB),
+	// from the nearest element with a background; "" is the white page.
+	// Translucent colours are blended over it.
+	backdrop string
+	// colorA is the alpha of a translucent text colour set on this element,
+	// blended over the backdrop once the element's background is known.
+	// 0 means the colour is opaque.
+	colorA float64
+
 	bold, italic, underline, strike model.Tri
 	smallCaps, caps                 model.Tri
 	lower                           bool // text-transform: lowercase
@@ -333,9 +342,22 @@ func (c *conv) computeStyle(n *html.Node, parent *style) (style, box) {
 		c.applyDecl(&st, &bx, parent, d)
 	}
 
-	if tag == "html" || tag == "body" {
+	page := tag == "html" || tag == "body"
+	if page {
 		// Page background and page margins are not paragraph formatting.
 		bx.bg, bx.bgSet, bx.marginLeft = "", false, 0
+	}
+	if bx.bgSet && bx.bg != "" {
+		st.backdrop = bx.bg
+	}
+	if st.colorA > 0 {
+		if col, ok := css.HexColor(st.color); ok {
+			col.A = st.colorA
+			st.color = col.Over(backdropColor(st.backdrop)).Hex()
+		}
+		st.colorA = 0
+	}
+	if page {
 		if tag == "html" && st.sizeSet {
 			c.rootPt = st.emPt
 		}
@@ -344,16 +366,49 @@ func (c *conv) computeStyle(n *html.Node, parent *style) (style, box) {
 	return st, bx
 }
 
+// minContrast is the WCAG contrast ratio below which a text colour is taken
+// to be unreadable on its background. It is set low so only text that is
+// practically invisible is affected: white on white is 1, #ddd on white 1.4.
+// The usual cause is a background the converter cannot draw, such as a page
+// background or an image, that the author put light text on.
+const minContrast = 1.3
+
+// backdropColor returns a backdrop as a colour; "" is the white page.
+func backdropColor(hex string) css.Color {
+	if col, ok := css.HexColor(hex); ok {
+		return col
+	}
+	return css.White
+}
+
+// readableColor returns text colour fg, or "" (Word's automatic colour, which
+// turns white on dark shading) when fg would be practically invisible on
+// background bg. Both are RRGGBB; an empty bg is the white page.
+func (c *conv) readableColor(fg, bg string) string {
+	col, ok := css.HexColor(fg)
+	if !ok {
+		return fg
+	}
+	back := backdropColor(bg)
+	if col.Contrast(back) >= minContrast {
+		return fg
+	}
+	c.warn("color", "text colour #"+fg+" would be nearly invisible on background #"+back.Hex()+
+		"; the automatic colour was used instead")
+	return ""
+}
+
 // hoistDefaults moves the font, colour, size and line height set on <html>
 // or <body> into the document defaults, so that they are stated once in the
-// stylesheet instead of on every run and paragraph.
+// stylesheet instead of on every run and paragraph. The page background is
+// not drawn, so a body colour meant for a dark page is dropped.
 func (c *conv) hoistDefaults(st *style) {
 	d := &c.doc.Defaults
 	if st.font != "" {
 		d.Font, st.font = st.font, ""
 	}
 	if st.color != "" {
-		d.Color, st.color = st.color, ""
+		d.Color, st.color = c.readableColor(st.color, ""), ""
 	}
 	if st.sizeSet {
 		st.emPt = math.Max(6, math.Min(st.emPt, 36))
@@ -774,23 +829,20 @@ func (c *conv) applyDecl(st *style, bx *box, parent *style, d css.Decl) {
 	switch d.Prop {
 	case "color":
 		if col, ok := css.ParseColor(val); ok && col.A > 0 {
-			st.color = col.Hex()
+			st.color, st.colorA = col.Hex(), 0
+			if col.A < 1 {
+				st.colorA = col.A
+			}
 		}
-	case "background-color", "background":
+	case "background-color", "background", "background-image":
 		if lv == "none" {
-			bx.bg, bx.bgSet = "", true
+			if d.Prop != "background-image" {
+				bx.bg, bx.bgSet = "", true
+			}
 			return
 		}
-		for _, t := range css.Fields(val) {
-			if col, ok := css.ParseColor(t); ok {
-				bx.bgSet = true
-				if col.A == 0 {
-					bx.bg = ""
-				} else {
-					bx.bg = col.OnWhite().Hex()
-				}
-				return
-			}
+		if bg, ok := backgroundValue(val, d.Prop, backdropColor(parent.backdrop)); ok {
+			bx.bg, bx.bgSet = bg, true
 		}
 	case "font-weight":
 		if t, ok := isBold(lv); ok {
@@ -1012,4 +1064,45 @@ func (c *conv) fontShorthand(st *style, parent *style, val string) {
 		}
 		return
 	}
+}
+
+// backgroundValue works out the single colour that stands in for a
+// background-color, background or background-image value, blended over the
+// backdrop behind the element. Images cannot be drawn as shading and are
+// skipped; a gradient is reduced to its average colour, and since background
+// images are painted over the background colour, a gradient layer wins over
+// a colour in the same value. ok is false when the value says nothing usable.
+// An empty result means transparent.
+func backgroundValue(val, prop string, backdrop css.Color) (bg string, ok bool) {
+	var plain, grad css.Color
+	var hasPlain, hasGrad bool
+	for _, layer := range css.SplitComma(val) {
+		for _, t := range css.Fields(layer) {
+			if !hasGrad {
+				if col, isGrad := css.GradientColor(t); isGrad {
+					grad, hasGrad = col, true
+					continue
+				}
+			}
+			if prop != "background-image" && !hasPlain {
+				if col, isCol := css.ParseColor(t); isCol {
+					plain, hasPlain = col, true
+				}
+			}
+		}
+	}
+	if !hasPlain && !hasGrad {
+		return "", false
+	}
+	base := backdrop
+	if hasPlain {
+		if plain.A == 0 && !hasGrad {
+			return "", true
+		}
+		base = plain.Over(base)
+	}
+	if hasGrad {
+		base = grad.Over(base)
+	}
+	return base.Hex(), true
 }

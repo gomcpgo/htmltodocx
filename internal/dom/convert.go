@@ -623,6 +623,9 @@ func (c *conv) runProps(bc *bctx) model.RunProps {
 		Vert:      st.vert,
 		RTL:       st.rtl,
 	}
+	if rp.Color != "" {
+		rp.Color = c.readableColor(rp.Color, st.backdrop)
+	}
 	if st.sizeSet {
 		rp.SizeHalfPt = int(math.Round(st.emPt * 2))
 	}
