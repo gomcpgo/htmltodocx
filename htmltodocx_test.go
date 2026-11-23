@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -672,6 +673,167 @@ func TestBackgrounds(t *testing.T) {
 		}
 		if tt.wantWarn == "" && strings.Contains(all, "invisible") {
 			t.Errorf("%s: unexpected warning %q", tt.name, warnings)
+		}
+	}
+}
+
+// Boxes with a border, or with a background and padding, draw as paragraph
+// borders. Every paragraph in a box carries the same borders and indents, so
+// Word draws the box once around all of them.
+func TestBoxes(t *testing.T) {
+	const callout = `<w:pBdr>` +
+		`<w:top w:val="single" w:sz="2" w:space="9" w:color="F0FDFA"/>` +
+		`<w:left w:val="single" w:sz="24" w:space="12" w:color="0F766E"/>` +
+		`<w:bottom w:val="single" w:sz="2" w:space="9" w:color="F0FDFA"/>` +
+		`<w:right w:val="single" w:sz="2" w:space="12" w:color="F0FDFA"/>` +
+		`</w:pBdr><w:shd w:val="clear" w:color="auto" w:fill="F0FDFA"/><w:ind w:left="300" w:right="245"/>`
+	tests := []struct {
+		name    string
+		html    string
+		want    []string // in order
+		wantNot []string
+		pBdr    int // number of bordered paragraphs
+	}{
+		{
+			// Padding on a side with no border becomes a border in the
+			// background colour, so the shading reaches the padding edge.
+			name: "callout with a left rule, padding and a background",
+			html: `<div style="border-left:4px solid #0f766e;padding:12px 16px;background:#f0fdfa;border-radius:8px"><p>One</p><p>Two</p></div>`,
+			want: []string{`<w:pPr>` + callout + `</w:pPr>`, `One`, `<w:pPr>` + callout + `</w:pPr>`, `Two`},
+			pBdr: 2,
+		},
+		{
+			name:    "heading underline with padding",
+			html:    `<h2 style="border-bottom:2px solid #333;padding-bottom:8px">Title</h2>`,
+			want:    []string{`<w:pStyle w:val="Heading2"/><w:pBdr><w:bottom w:val="single" w:sz="12" w:space="6" w:color="333333"/></w:pBdr></w:pPr>`},
+			wantNot: []string{`<w:ind`},
+			pBdr:    1,
+		},
+		{
+			name: "bordered box without a background",
+			html: `<div style="border:1px solid #ccc;padding:12px 16px">x</div>`,
+			want: []string{`<w:pBdr><w:top w:val="single" w:sz="6" w:space="9" w:color="CCCCCC"/>` +
+				`<w:left w:val="single" w:sz="6" w:space="12" w:color="CCCCCC"/>` +
+				`<w:bottom w:val="single" w:sz="6" w:space="9" w:color="CCCCCC"/>` +
+				`<w:right w:val="single" w:sz="6" w:space="12" w:color="CCCCCC"/></w:pBdr>` +
+				`<w:ind w:left="255" w:right="255"/>`},
+			wantNot: []string{`<w:shd`},
+			pBdr:    1,
+		},
+		{
+			// Word cannot put a border more than 31pt from the text.
+			name: "large padding is capped",
+			html: `<div style="border:1px solid #000;padding:60px">x</div>`,
+			want: []string{`w:space="31"`, `<w:ind w:left="635" w:right="635"/>`},
+			pBdr: 1,
+		},
+		{
+			name:    "padding with nothing drawn is ignored",
+			html:    `<div style="padding:20px">x</div><div style="padding:20px;background:#fff">y</div>`,
+			wantNot: []string{`<w:ind`},
+		},
+		{
+			name:    "background without padding is shading only",
+			html:    `<div style="background:#eeeeee">x</div>`,
+			want:    []string{`w:fill="EEEEEE"`},
+			wantNot: []string{`<w:ind`},
+		},
+		{
+			name: "nested box sits inside the outer one",
+			html: `<div style="border:1px solid #000;padding:8px"><p>outer</p>` +
+				`<div style="border-left:3px solid #f00;padding-left:8px"><p>inner</p></div><p>after</p></div>`,
+			want: []string{
+				`<w:ind w:left="135" w:right="135"/>`, `outer`,
+				`<w:pBdr><w:left w:val="single" w:sz="18" w:space="6" w:color="FF0000"/></w:pBdr><w:ind w:left="300" w:right="135"/>`, `inner`,
+				`<w:ind w:left="135" w:right="135"/>`, `after`,
+			},
+			pBdr: 3,
+		},
+		{
+			name: "cards in a grid row are boxes",
+			html: `<div style="display:grid;grid-template-columns:1fr 1fr"><div style="border:1px solid #000;padding:8px">A</div><div style="border:1px solid #000;padding:8px">B</div></div>`,
+			pBdr: 2,
+		},
+		{
+			// Word would draw adjacent boxes with identical borders as one.
+			name: "sibling boxes stay apart",
+			html: `<div style="border:1px solid #000"><p>a</p><p>b</p></div><div style="border:1px solid #000"><p>c</p></div><div style="border:1px solid #000">d</div>`,
+			want: []string{`w:color="000000"`, `>a<`, `w:color="000000"`, `>b<`, `w:color="000001"`, `>c<`, `w:color="000000"`, `>d<`},
+			pBdr: 4,
+		},
+		{
+			name: "list items with a rule under each keep every rule",
+			html: `<ul><li style="border-bottom:1px solid #ddd">a</li><li style="border-bottom:1px solid #ddd">b</li><li style="border-bottom:1px solid #ddd">c</li></ul>`,
+			want: []string{`w:color="DDDDDD"`, `>a<`, `w:color="DDDDDC"`, `>b<`, `w:color="DDDDDD"`, `>c<`},
+			pBdr: 3,
+		},
+		{
+			name: "list items in a box carry its border",
+			html: `<div style="border:1px solid #000"><p>a</p><ul><li>b</li></ul></div>`,
+			pBdr: 2,
+		},
+		{
+			name: "table in a box is indented to the box's content",
+			html: `<div style="border:1px solid #000;padding:8px"><table><tr><td>x</td></tr></table></div>`,
+			want: []string{`<w:tblInd w:w="135" w:type="dxa"/>`},
+		},
+		{
+			name:    "page borders and padding are not paragraph formatting",
+			html:    `<html style="border:1px solid #000"><body style="border:2px solid #000;padding:40px;background:#eee"><p>x</p></body></html>`,
+			wantNot: []string{`<w:ind`},
+		},
+		{
+			name: "inline boxes stay inline",
+			html: `<p>a <span style="border:1px solid #000;padding:2px">b</span></p>`,
+		},
+		{
+			name:    "border style none draws nothing",
+			html:    `<div style="border:none;padding:8px">x</div><div style="border:0 solid #000">y</div>`,
+			wantNot: []string{`<w:ind`},
+		},
+	}
+	for _, tt := range tests {
+		var warnings []string
+		got := body(t, tt.html, &Options{Warn: func(w Warning) { warnings = append(warnings, w.String()) }})
+		pos := 0
+		for _, w := range tt.want {
+			i := strings.Index(got[pos:], w)
+			if i < 0 {
+				t.Errorf("%s: missing %s (in order) in\n%s", tt.name, w, got)
+				break
+			}
+			pos += i + len(w)
+		}
+		for _, w := range tt.wantNot {
+			if strings.Contains(got, w) {
+				t.Errorf("%s: unexpected %s in\n%s", tt.name, w, got)
+			}
+		}
+		if n := strings.Count(got, "<w:pBdr>"); n != tt.pBdr {
+			t.Errorf("%s: %d bordered paragraphs, want %d, in\n%s", tt.name, n, tt.pBdr, got)
+		}
+		// Rounded corners and the like are dropped without a warning.
+		if len(warnings) > 0 {
+			t.Errorf("%s: unexpected warnings %q", tt.name, warnings)
+		}
+	}
+}
+
+// Nested boxes indent their content, but never squeeze it below an inch.
+func TestNestedBoxesKeepTextWidth(t *testing.T) {
+	html := strings.Repeat(`<div style="border:2px solid #000;padding:30px">p`, 60) + strings.Repeat("</div>", 60)
+	got := body(t, html, nil)
+	re := regexp.MustCompile(`<w:ind w:left="(\d+)" w:right="(\d+)"/>`)
+	m := re.FindAllStringSubmatch(got, -1)
+	if len(m) < 60 {
+		t.Fatalf("found %d indented paragraphs, want 60", len(m))
+	}
+	const textWidth = 9026 // A4 with one inch margins
+	for _, sm := range m {
+		left, _ := strconv.Atoi(sm[1])
+		right, _ := strconv.Atoi(sm[2])
+		if textWidth-left-right < 1440 {
+			t.Fatalf("left %d + right %d leaves less than an inch", left, right)
 		}
 	}
 }

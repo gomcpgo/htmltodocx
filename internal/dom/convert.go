@@ -91,14 +91,18 @@ type bctx struct {
 	firstLine int
 	bidi      bool
 	indent    int
-	shade     string
-	tabs      []model.TabStop // tab stops for paragraphs started here
-	keepNext  bool
-	link      *linkRef
-	listLevel int // -1 outside lists
-	listBase  int
-	avail     int // width available to content, twips
-	depth     int
+	// indentRight is the right indent of paragraphs started here; avail is
+	// reduced by the same amount.
+	indentRight int
+	shade       string
+	border      *[4]model.Border // borders of the enclosing box, or nil
+	tabs        []model.TabStop  // tab stops for paragraphs started here
+	keepNext    bool
+	link        *linkRef
+	listLevel   int // -1 outside lists
+	listBase    int
+	avail       int // width available to content, twips
+	depth       int
 }
 
 type conv struct {
@@ -512,8 +516,85 @@ func (c *conv) enterBlock(bc *bctx, st style, bx box) {
 	if bx.marginLeft > 0 {
 		bc.indent = min(bc.indent+bx.marginLeft, c.opt.TextWidth*2/3)
 	}
+	shaded := false
 	if bx.bgSet && !(bx.bg == "FFFFFF" && bc.shade == "") {
 		bc.shade = bx.bg
+		shaded = bx.bg != ""
+	}
+	c.boxBorders(bc, &bx, shaded)
+}
+
+// maxBorderSpace is the largest distance between a paragraph border and its
+// text that Word accepts, in points.
+const maxBorderSpace = 31
+
+// boxBorders gives the paragraphs inside a block box the box's borders and
+// padding. Paragraph borders are drawn outside the indents, so the indents
+// grow by each border's width and spacing and the border lands where the box
+// starts. Rounded corners and shadows cannot be drawn and are ignored.
+func (c *conv) boxBorders(bc *bctx, bx *box, shaded bool) {
+	var bs [4]model.Border
+	drawn := false
+	for side := range bs {
+		b := bx.border(side)
+		pad := bx.pad[side]
+		if b.Style == "" {
+			if !shaded || pad <= 0 {
+				continue
+			}
+			// Shading fills a paragraph up to its borders. Padding on a side
+			// without one becomes a hairline in the background colour, so
+			// the shading covers the padding as it does in a browser.
+			b = model.Border{Style: "single", Size: 2, Color: bc.shade}
+		}
+		b.Space = min(int(math.Round(pad)), maxBorderSpace)
+		bs[side] = b
+		drawn = true
+	}
+	if !drawn {
+		return
+	}
+	inset := func(side int) int {
+		if bs[side].Style == "" {
+			return 0
+		}
+		return int(math.Round((float64(bs[side].Size)/8 + float64(bs[side].Space)) * 20))
+	}
+	// Keep at least an inch for the text, however deep boxes are nested.
+	bc.indent = min(bc.indent+inset(model.Left), c.opt.TextWidth*2/3, max(bc.indent, bc.avail-1440))
+	right := min(inset(model.Right), max(0, bc.avail-bc.indent-1440))
+	bc.indentRight += right
+	bc.avail -= right
+	bc.border = &bs
+}
+
+// separateBoxes keeps a box from merging with the box before it. Word draws
+// adjacent paragraphs with identical borders as one box, which would join two
+// cards, or turn list items that each have a bottom rule into a list with one
+// rule under the last item. A one-unit change of colour is invisible but
+// makes the borders differ. It changes the box's shared borders, so all of
+// its paragraphs stay alike.
+func separateBoxes(prev model.Block, cur *[4]model.Border) {
+	p, ok := prev.(*model.Paragraph)
+	if !ok || p.Props.Borders == nil || p.Props.Borders == cur || *p.Props.Borders != *cur {
+		return
+	}
+	for i := range cur {
+		b := &cur[i]
+		if b.Style == "" {
+			continue
+		}
+		if b.Color == "" {
+			b.Color = "000000" // the automatic colour on a white page
+			continue
+		}
+		// Flip the lowest bit of the blue channel.
+		n := len(b.Color) - 1
+		v, err := strconv.ParseUint(b.Color[n:], 16, 8)
+		if err != nil {
+			continue
+		}
+		b.Color = b.Color[:n] + strings.ToUpper(strconv.FormatUint(v^1, 16))
 	}
 }
 
@@ -591,15 +672,17 @@ func (c *conv) ensurePara(bc *bctx) {
 	}
 	p := &paraBuilder{lastSpace: true}
 	p.props = model.ParaProps{
-		Style:      bc.paraStyle,
-		Align:      bc.align,
-		IndentLeft: bc.indent,
-		FirstLine:  bc.firstLine,
-		Line:       bc.line,
-		Shade:      bc.shade,
-		Tabs:       bc.tabs,
-		KeepNext:   bc.keepNext,
-		Bidi:       bc.bidi,
+		Style:       bc.paraStyle,
+		Align:       bc.align,
+		IndentLeft:  bc.indent,
+		IndentRight: bc.indentRight,
+		FirstLine:   bc.firstLine,
+		Line:        bc.line,
+		Shade:       bc.shade,
+		Borders:     bc.border,
+		Tabs:        bc.tabs,
+		KeepNext:    bc.keepNext,
+		Bidi:        bc.bidi,
 	}
 	if p.props.Align == "left" && !bc.bidi {
 		p.props.Align = "" // every built-in style is already left aligned
@@ -823,6 +906,9 @@ func (c *conv) flushPara() {
 			c.pendingBreak = true
 		}
 		return
+	}
+	if b := para.Props.Borders; b != nil && len(*c.sink) > 0 {
+		separateBoxes((*c.sink)[len(*c.sink)-1], b)
 	}
 	*c.sink = append(*c.sink, para)
 }

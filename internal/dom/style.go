@@ -99,6 +99,8 @@ type box struct {
 	bColor  [4]string
 	bSet    [4]bool // a border-style was given for this side, possibly "none"
 	bHasWid [4]bool
+
+	pad [4]float64 // padding in points, by side
 }
 
 // border returns the resolved border of one side.
@@ -354,8 +356,10 @@ func (c *conv) computeStyle(n *html.Node, parent *style) (style, box) {
 
 	page := tag == "html" || tag == "body"
 	if page {
-		// Page background and page margins are not paragraph formatting.
+		// The page's background, margins, borders and padding are not
+		// paragraph formatting.
 		bx.bg, bx.bgSet, bx.marginLeft = "", false, 0
+		bx.bStyle, bx.pad = [4]string{}, [4]float64{}
 	}
 	if bx.bgSet && bx.bg != "" {
 		st.backdrop = bx.bg
@@ -952,6 +956,34 @@ func (c *conv) applyDecl(st *style, bx *box, parent *style, d css.Decl) {
 		if tw, ok := c.lengthTwips(lv, st.emPt); ok {
 			st.textIndent = max(-maxIndent, min(tw, maxIndent))
 		}
+	case "padding":
+		if v, ok := expand4(css.Fields(lv)); ok {
+			for side, x := range v {
+				c.applyPadding(st, bx, side, x)
+			}
+		}
+	case "padding-top", "padding-block-start":
+		c.applyPadding(st, bx, model.Top, lv)
+	case "padding-right", "padding-inline-end":
+		c.applyPadding(st, bx, model.Right, lv)
+	case "padding-bottom", "padding-block-end":
+		c.applyPadding(st, bx, model.Bottom, lv)
+	case "padding-left", "padding-inline-start":
+		c.applyPadding(st, bx, model.Left, lv)
+	case "padding-inline", "padding-block":
+		// One value for both sides, or start then end.
+		f := css.Fields(lv)
+		if len(f) == 1 {
+			f = append(f, f[0])
+		}
+		if len(f) == 2 {
+			start, end := model.Left, model.Right
+			if d.Prop == "padding-block" {
+				start, end = model.Top, model.Bottom
+			}
+			c.applyPadding(st, bx, start, f[0])
+			c.applyPadding(st, bx, end, f[1])
+		}
 	case "margin-left", "margin-inline-start":
 		c.applyMarginLeft(st, bx, lv)
 	case "margin-right", "margin-inline-end":
@@ -1048,6 +1080,18 @@ func isPageBreak(v string) bool {
 		return true
 	}
 	return false
+}
+
+// applyPadding sets the padding of one side. Percentages, which refer to the
+// width of the containing block, are ignored.
+func (c *conv) applyPadding(st *style, bx *box, side int, v string) {
+	l, ok := css.ParseLength(v)
+	if !ok {
+		return
+	}
+	if pt, ok := l.Points(st.emPt, c.rootPt); ok && pt >= 0 {
+		bx.pad[side] = pt
+	}
 }
 
 func (c *conv) applyMarginLeft(st *style, bx *box, v string) {

@@ -54,6 +54,20 @@ The reader follows the CSS model: runs of collapsible white space become one spa
 
 Paragraphs are collected as a flat list of items and trimmed when the block ends. Text is appended to a byte slice, not concatenated, so thousands of small text nodes stay linear.
 
+### Boxes: borders and padding
+
+A block with a border, or with a background and padding, becomes paragraph borders (`w:pBdr`) on every paragraph inside it (`boxBorders` in `internal/dom/convert.go`). Word draws adjacent paragraphs with identical borders and indents as one box, so all paragraphs of a CSS box share one set of borders and one pair of indents; a callout of three paragraphs is one box in Word.
+
+- **Padding becomes the border's distance from the text** (`w:space`, in points). Word caps it at 31pt, so larger padding is capped.
+- **Indents grow by each border's width plus its spacing.** Word draws a paragraph border outside the indent, so this puts the border where the CSS box starts rather than in the margin. The right inset also narrows the width that tables, images and tab stops are fitted to. However deep boxes nest, at least an inch is left for the text.
+- **Padding on a shaded side without a border** is drawn as a hairline border in the background colour. Shading fills a paragraph only up to its borders, so this is what makes the background cover the padding, as in a browser. With no background, padding on a side without a border draws nothing and is ignored, so wrappers such as `.container { padding: 20px }` do not indent the whole document.
+- **Sibling boxes are kept apart.** Two cards in a row, or list items that each have a rule under them, would otherwise merge into one box, with one rule under the last item. When a box's first paragraph follows a paragraph with equal borders from another box, the lowest bit of its border colours is flipped: invisible, but enough to make the borders differ.
+- **A nested box replaces the outer box's borders** for its own paragraphs. A paragraph has one set of borders, and an inner box drawn at its own indent reads better than the outer box's borders around it.
+- **Rounded corners and shadows are dropped silently.** They are decoration, and Word cannot draw them on paragraphs.
+- **Not attempted:** borders on `html`, `body` and inline elements; percentage padding; vertical padding on a side that draws nothing.
+
+Limitation: a box whose content has different indents, such as a list or a nested box, is drawn by Word as several boxes stacked, since Word only joins paragraphs whose indents match. A table also splits a box, and is not inside its border. A single-cell table would hold any content, but it would turn every bordered section of a document, and often the whole page wrapper, into a table, which is worse to edit and to break across pages.
+
 ### Flex and grid
 
 Word has no side-by-side layout for paragraphs, but flex and grid items must at least stay apart: in a browser each item is its own box, so `<span>Core</span><span>Go</span>` in a grid reads as two cells, while the plain white-space rules would glue it into "CoreGo". The converter follows CSS in treating every item as a separate box (text runs that are only white space are not items, empty items are skipped) and approximates the arrangement in `internal/dom/layout.go`:

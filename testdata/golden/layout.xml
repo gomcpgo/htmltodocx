@@ -4,7 +4,14 @@
 <w:p>
 <w:pPr>
 <w:pStyle w:val="Heading1"/>
+<w:pBdr>
+<w:top w:val="single" w:sz="2" w:space="12" w:color="112A4B"/>
+<w:left w:val="single" w:sz="2" w:space="12" w:color="112A4B"/>
+<w:bottom w:val="single" w:sz="2" w:space="12" w:color="112A4B"/>
+<w:right w:val="single" w:sz="2" w:space="12" w:color="112A4B"/>
+</w:pBdr>
 <w:shd w:val="clear" w:color="auto" w:fill="112A4B"/>
+<w:ind w:left="245" w:right="245"/>
 </w:pPr>
 <w:r>
 <w:rPr>
@@ -15,10 +22,17 @@
 </w:p>
 <w:p>
 <w:pPr>
+<w:pBdr>
+<w:top w:val="single" w:sz="2" w:space="12" w:color="112A4B"/>
+<w:left w:val="single" w:sz="2" w:space="12" w:color="112A4B"/>
+<w:bottom w:val="single" w:sz="2" w:space="12" w:color="112A4B"/>
+<w:right w:val="single" w:sz="2" w:space="12" w:color="112A4B"/>
+</w:pBdr>
 <w:shd w:val="clear" w:color="auto" w:fill="112A4B"/>
 <w:tabs>
-<w:tab w:val="right" w:pos="9026"/>
+<w:tab w:val="right" w:pos="8781"/>
 </w:tabs>
+<w:ind w:left="245" w:right="245"/>
 </w:pPr>
 <w:r>
 <w:rPr>
@@ -41,7 +55,14 @@
 </w:p>
 <w:p>
 <w:pPr>
+<w:pBdr>
+<w:top w:val="single" w:sz="2" w:space="12" w:color="112A4B"/>
+<w:left w:val="single" w:sz="2" w:space="12" w:color="112A4B"/>
+<w:bottom w:val="single" w:sz="2" w:space="12" w:color="112A4B"/>
+<w:right w:val="single" w:sz="2" w:space="12" w:color="112A4B"/>
+</w:pBdr>
 <w:shd w:val="clear" w:color="auto" w:fill="112A4B"/>
+<w:ind w:left="245" w:right="245"/>
 </w:pPr>
 <w:r>
 <w:rPr>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Boxes</title>
+<style>
+  h2 { border-bottom: 2px solid #1d4ed8; padding-bottom: 6px; }
+  .callout { border-left: 4px solid #0f766e; background: #f0fdfa; padding: 12px 16px; border-radius: 6px; }
+  .card { border: 1px solid #d1d5db; padding: 10px 14px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,.1); }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .warn { border: 2px dashed #b45309; padding: 4px 8px; }
+  .steps li { border-bottom: 1px solid #e5e7eb; padding: 4px 0; }
+  .panel { background: #1e293b; color: #f8fafc; padding: 1rem 1.5rem; }
+</style>
+</head>
+<body>
+<h2>Section with a rule</h2>
+<p>Plain text before the boxes.</p>
+
+<div class="callout">
+  <p><strong>Note:</strong> a callout with two paragraphs.</p>
+  <p>The second paragraph shares the box.</p>
+</div>
+
+<div class="card">
+  <h3>Card title</h3>
+  <p>Card text with a list:</p>
+  <ul><li>first</li><li>second</li></ul>
+  <div class="warn">A dashed warning inside the card.</div>
+  <p>Card text after the warning.</p>
+  <table><tr><th>Key</th><th>Value</th></tr><tr><td>a</td><td>1</td></tr></table>
+</div>
+
+<div class="cards">
+  <div class="card"><strong>Left card</strong><p>Left body.</p></div>
+  <div class="card"><strong>Right card</strong><p>Right body.</p></div>
+</div>
+
+<ol class="steps">
+  <li>Step one</li>
+  <li>Step two</li>
+  <li>Step three</li>
+</ol>
+
+<div class="panel">
+  <p>Dark panel with padding.</p>
+</div>
+
+<table><tr><td><div class="callout">Callout in a table cell.</div></td></tr></table>
+</body>
+</html>

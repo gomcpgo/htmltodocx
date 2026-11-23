@@ -1,0 +1,387 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+<w:body>
+<w:p>
+<w:pPr>
+<w:pStyle w:val="Heading2"/>
+<w:pBdr>
+<w:bottom w:val="single" w:sz="12" w:space="5" w:color="1D4ED8"/>
+</w:pBdr>
+</w:pPr>
+<w:r>
+<w:t>Section with a rule</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:r>
+<w:t>Plain text before the boxes.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:pBdr>
+<w:top w:val="single" w:sz="2" w:space="9" w:color="F0FDFA"/>
+<w:left w:val="single" w:sz="24" w:space="12" w:color="0F766E"/>
+<w:bottom w:val="single" w:sz="2" w:space="9" w:color="F0FDFA"/>
+<w:right w:val="single" w:sz="2" w:space="12" w:color="F0FDFA"/>
+</w:pBdr>
+<w:shd w:val="clear" w:color="auto" w:fill="F0FDFA"/>
+<w:ind w:left="300" w:right="245"/>
+</w:pPr>
+<w:r>
+<w:rPr>
+<w:b/>
+<w:bCs/>
+</w:rPr>
+<w:t>Note:</w:t>
+</w:r>
+<w:r>
+<w:t xml:space="preserve"> a callout with two paragraphs.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:pBdr>
+<w:top w:val="single" w:sz="2" w:space="9" w:color="F0FDFA"/>
+<w:left w:val="single" w:sz="24" w:space="12" w:color="0F766E"/>
+<w:bottom w:val="single" w:sz="2" w:space="9" w:color="F0FDFA"/>
+<w:right w:val="single" w:sz="2" w:space="12" w:color="F0FDFA"/>
+</w:pBdr>
+<w:shd w:val="clear" w:color="auto" w:fill="F0FDFA"/>
+<w:ind w:left="300" w:right="245"/>
+</w:pPr>
+<w:r>
+<w:t>The second paragraph shares the box.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:pStyle w:val="Heading3"/>
+<w:pBdr>
+<w:top w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
+<w:left w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
+<w:bottom w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
+<w:right w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
+</w:pBdr>
+<w:ind w:left="235" w:right="235"/>
+</w:pPr>
+<w:r>
+<w:t>Card title</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:pBdr>
+<w:top w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
+<w:left w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
+<w:bottom w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
+<w:right w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
+</w:pBdr>
+<w:ind w:left="235" w:right="235"/>
+</w:pPr>
+<w:r>
+<w:t>Card text with a list:</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:pStyle w:val="ListParagraph"/>
+<w:numPr>
+<w:ilvl w:val="0"/>
+<w:numId w:val="1"/>
+</w:numPr>
+<w:pBdr>
+<w:top w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
+<w:left w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
+<w:bottom w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
+<w:right w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
+</w:pBdr>
+<w:ind w:left="955" w:right="235" w:hanging="360"/>
+</w:pPr>
+<w:r>
+<w:t>first</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:pStyle w:val="ListParagraph"/>
+<w:numPr>
+<w:ilvl w:val="0"/>
+<w:numId w:val="1"/>
+</w:numPr>
+<w:pBdr>
+<w:top w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
+<w:left w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
+<w:bottom w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
+<w:right w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
+</w:pBdr>
+<w:ind w:left="955" w:right="235" w:hanging="360"/>
+</w:pPr>
+<w:r>
+<w:t>second</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:pBdr>
+<w:top w:val="dashed" w:sz="12" w:space="3" w:color="B45309"/>
+<w:left w:val="dashed" w:sz="12" w:space="6" w:color="B45309"/>
+<w:bottom w:val="dashed" w:sz="12" w:space="3" w:color="B45309"/>
+<w:right w:val="dashed" w:sz="12" w:space="6" w:color="B45309"/>
+</w:pBdr>
+<w:ind w:left="385" w:right="385"/>
+</w:pPr>
+<w:r>
+<w:t>A dashed warning inside the card.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:pBdr>
+<w:top w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
+<w:left w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
+<w:bottom w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
+<w:right w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
+</w:pBdr>
+<w:ind w:left="235" w:right="235"/>
+</w:pPr>
+<w:r>
+<w:t>Card text after the warning.</w:t>
+</w:r>
+</w:p>
+<w:tbl>
+<w:tblPr>
+<w:tblStyle w:val="TableGrid"/>
+<w:tblW w:w="0" w:type="auto"/>
+<w:tblInd w:w="235" w:type="dxa"/>
+</w:tblPr>
+<w:tblGrid>
+<w:gridCol w:w="4278"/>
+<w:gridCol w:w="4278"/>
+</w:tblGrid>
+<w:tr>
+<w:trPr>
+<w:tblHeader/>
+</w:trPr>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="0" w:type="auto"/>
+</w:tcPr>
+<w:p>
+<w:pPr>
+<w:jc w:val="center"/>
+</w:pPr>
+<w:r>
+<w:rPr>
+<w:b/>
+<w:bCs/>
+</w:rPr>
+<w:t>Key</w:t>
+</w:r>
+</w:p>
+</w:tc>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="0" w:type="auto"/>
+</w:tcPr>
+<w:p>
+<w:pPr>
+<w:jc w:val="center"/>
+</w:pPr>
+<w:r>
+<w:rPr>
+<w:b/>
+<w:bCs/>
+</w:rPr>
+<w:t>Value</w:t>
+</w:r>
+</w:p>
+</w:tc>
+</w:tr>
+<w:tr>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="0" w:type="auto"/>
+</w:tcPr>
+<w:p>
+<w:r>
+<w:t>a</w:t>
+</w:r>
+</w:p>
+</w:tc>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="0" w:type="auto"/>
+</w:tcPr>
+<w:p>
+<w:r>
+<w:t>1</w:t>
+</w:r>
+</w:p>
+</w:tc>
+</w:tr>
+</w:tbl>
+<w:p>
+<w:pPr>
+<w:pBdr>
+<w:top w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
+<w:left w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
+<w:bottom w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
+<w:right w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
+</w:pBdr>
+<w:ind w:left="235" w:right="235"/>
+</w:pPr>
+<w:r>
+<w:rPr>
+<w:b/>
+<w:bCs/>
+</w:rPr>
+<w:t>Left card</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:pBdr>
+<w:top w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
+<w:left w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
+<w:bottom w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
+<w:right w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
+</w:pBdr>
+<w:ind w:left="235" w:right="235"/>
+</w:pPr>
+<w:r>
+<w:t>Left body.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:pBdr>
+<w:top w:val="single" w:sz="6" w:space="8" w:color="D1D5DA"/>
+<w:left w:val="single" w:sz="6" w:space="11" w:color="D1D5DA"/>
+<w:bottom w:val="single" w:sz="6" w:space="8" w:color="D1D5DA"/>
+<w:right w:val="single" w:sz="6" w:space="11" w:color="D1D5DA"/>
+</w:pBdr>
+<w:ind w:left="235" w:right="235"/>
+</w:pPr>
+<w:r>
+<w:rPr>
+<w:b/>
+<w:bCs/>
+</w:rPr>
+<w:t>Right card</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:pBdr>
+<w:top w:val="single" w:sz="6" w:space="8" w:color="D1D5DA"/>
+<w:left w:val="single" w:sz="6" w:space="11" w:color="D1D5DA"/>
+<w:bottom w:val="single" w:sz="6" w:space="8" w:color="D1D5DA"/>
+<w:right w:val="single" w:sz="6" w:space="11" w:color="D1D5DA"/>
+</w:pBdr>
+<w:ind w:left="235" w:right="235"/>
+</w:pPr>
+<w:r>
+<w:t>Right body.</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:pStyle w:val="ListParagraph"/>
+<w:numPr>
+<w:ilvl w:val="0"/>
+<w:numId w:val="2"/>
+</w:numPr>
+<w:pBdr>
+<w:bottom w:val="single" w:sz="6" w:space="3" w:color="E5E7EB"/>
+</w:pBdr>
+</w:pPr>
+<w:r>
+<w:t>Step one</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:pStyle w:val="ListParagraph"/>
+<w:numPr>
+<w:ilvl w:val="0"/>
+<w:numId w:val="2"/>
+</w:numPr>
+<w:pBdr>
+<w:bottom w:val="single" w:sz="6" w:space="3" w:color="E5E7EA"/>
+</w:pBdr>
+</w:pPr>
+<w:r>
+<w:t>Step two</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:pStyle w:val="ListParagraph"/>
+<w:numPr>
+<w:ilvl w:val="0"/>
+<w:numId w:val="2"/>
+</w:numPr>
+<w:pBdr>
+<w:bottom w:val="single" w:sz="6" w:space="3" w:color="E5E7EB"/>
+</w:pBdr>
+</w:pPr>
+<w:r>
+<w:t>Step three</w:t>
+</w:r>
+</w:p>
+<w:p>
+<w:pPr>
+<w:pBdr>
+<w:top w:val="single" w:sz="2" w:space="11" w:color="1E293B"/>
+<w:left w:val="single" w:sz="2" w:space="17" w:color="1E293B"/>
+<w:bottom w:val="single" w:sz="2" w:space="11" w:color="1E293B"/>
+<w:right w:val="single" w:sz="2" w:space="17" w:color="1E293B"/>
+</w:pBdr>
+<w:shd w:val="clear" w:color="auto" w:fill="1E293B"/>
+<w:ind w:left="345" w:right="345"/>
+</w:pPr>
+<w:r>
+<w:rPr>
+<w:color w:val="F8FAFC"/>
+</w:rPr>
+<w:t>Dark panel with padding.</w:t>
+</w:r>
+</w:p>
+<w:tbl>
+<w:tblPr>
+<w:tblStyle w:val="TableGrid"/>
+<w:tblW w:w="0" w:type="auto"/>
+</w:tblPr>
+<w:tblGrid>
+<w:gridCol w:w="9026"/>
+</w:tblGrid>
+<w:tr>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="0" w:type="auto"/>
+</w:tcPr>
+<w:p>
+<w:pPr>
+<w:pBdr>
+<w:top w:val="single" w:sz="2" w:space="9" w:color="F0FDFA"/>
+<w:left w:val="single" w:sz="24" w:space="12" w:color="0F766E"/>
+<w:bottom w:val="single" w:sz="2" w:space="9" w:color="F0FDFA"/>
+<w:right w:val="single" w:sz="2" w:space="12" w:color="F0FDFA"/>
+</w:pBdr>
+<w:shd w:val="clear" w:color="auto" w:fill="F0FDFA"/>
+<w:ind w:left="300" w:right="245"/>
+</w:pPr>
+<w:r>
+<w:t>Callout in a table cell.</w:t>
+</w:r>
+</w:p>
+</w:tc>
+</w:tr>
+</w:tbl>
+<w:sectPr>
+<w:pgSz w:w="11906" w:h="16838"/>
+<w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="708" w:footer="708" w:gutter="0"/>
+</w:sectPr>
+</w:body>
+</w:document>

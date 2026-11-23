@@ -133,12 +133,17 @@ type Paragraph struct {
 
 // ParaProps is paragraph formatting. Lengths are in twips.
 type ParaProps struct {
-	Style           string // style ID; empty means Normal
-	Align           string // "", "left", "center", "right" or "both"
-	IndentLeft      int
-	FirstLine       int // negative values are a hanging indent
-	Line            int // line spacing in 240ths of a line; 0 means unset
-	Shade           string
+	Style       string // style ID; empty means Normal
+	Align       string // "", "left", "center", "right" or "both"
+	IndentLeft  int
+	IndentRight int
+	FirstLine   int // negative values are a hanging indent
+	Line        int // line spacing in 240ths of a line; 0 means unset
+	Shade       string
+	// Borders are the edges of the box the paragraph is in, or nil. Word
+	// draws adjacent paragraphs with identical borders and indents as one
+	// box, so every paragraph of a box shares the same values.
+	Borders         *[4]Border
 	Tabs            []TabStop // custom tab stops, in increasing position
 	KeepNext        bool
 	PageBreakBefore bool
@@ -158,11 +163,12 @@ type HorizontalRule struct {
 	IndentLeft int
 }
 
-// Border is one edge of a table or cell.
+// Border is one edge of a table, cell or paragraph box.
 type Border struct {
 	Style string // "", "single", "dashed", "dotted" or "double"; "" means none
 	Size  int    // eighths of a point
 	Color string // RRGGBB, or "" for automatic
+	Space int    // points between the border and the text (paragraphs only), 0..31
 }
 
 // Sides indexes the edges of a box.

@@ -71,7 +71,11 @@ func TestPathologicalInputs(t *testing.T) {
 		"gridrows": `<div style="display:grid;grid-template-columns:repeat(99999999, 1fr) repeat(3, repeat(40, 1px))">x</div>` +
 			strings.Repeat(`<div style="display:grid;grid-template-columns:100px 1fr 2fr">`+strings.Repeat("<i>a</i>", 3000)+"</div>", 5),
 		// Nested flex containers, each item a container again.
-		"flexnest":  strings.Repeat(`<div style="display:flex">`, 400) + "x" + strings.Repeat("</div>", 400),
+		"flexnest": strings.Repeat(`<div style="display:flex">`, 400) + "x" + strings.Repeat("</div>", 400),
+		// Bordered, padded boxes nested deep enough to use up the indent
+		// and the right inset, and long runs of sibling boxes.
+		"boxnest":   strings.Repeat(`<div style="border:2px solid #123;padding:30px;background:#eee">p`, 500) + "x" + strings.Repeat("</div>", 500),
+		"boxes":     strings.Repeat(`<div style="border-left:4px solid #0f766e;padding:8px;background:#f0fdfa"><p>a</p><p>b</p></div><li style="border-bottom:1px solid #ddd">c</li>`, 5000),
 		"selectors": "<style>" + strings.Repeat("a", 10000) + strings.Repeat(" > b", 5000) + "{color:red}" + strings.Repeat("p,", 20000) + "p{color:red}</style><p>x",
 	}
 	for name, html := range cases {

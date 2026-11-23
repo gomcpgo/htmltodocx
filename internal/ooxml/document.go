@@ -117,6 +117,7 @@ func (d *docWriter) paragraph(p *model.Paragraph) {
 		b.i(pp.Num.ID)
 		b.s(`"/></w:numPr>`)
 	}
+	b.borders("pBdr", pp.Borders)
 	if pp.Shade != "" {
 		b.s(`<w:shd w:val="clear" w:color="auto" w:fill="`, pp.Shade, `"/>`)
 	}
@@ -137,11 +138,16 @@ func (d *docWriter) paragraph(p *model.Paragraph) {
 		b.i(pp.Line)
 		b.s(`" w:lineRule="auto"/>`)
 	}
-	if pp.IndentLeft > 0 || pp.FirstLine != 0 {
+	if pp.IndentLeft > 0 || pp.IndentRight > 0 || pp.FirstLine != 0 {
 		b.s(`<w:ind`)
 		if pp.IndentLeft > 0 {
 			b.s(` w:left="`)
 			b.i(pp.IndentLeft)
+			b.s(`"`)
+		}
+		if pp.IndentRight > 0 {
+			b.s(` w:right="`)
+			b.i(pp.IndentRight)
 			b.s(`"`)
 		}
 		if pp.FirstLine > 0 {
@@ -412,7 +418,9 @@ func (b *buf) border(name string, br model.Border) {
 	}
 	b.s(`<w:`, name, ` w:val="`, br.Style, `" w:sz="`)
 	b.i(br.Size)
-	b.s(`" w:space="0" w:color="`, color, `"/>`)
+	b.s(`" w:space="`)
+	b.i(br.Space)
+	b.s(`" w:color="`, color, `"/>`)
 }
 
 var sideNames = [4]string{model.Top: "top", model.Left: "left", model.Bottom: "bottom", model.Right: "right"}
