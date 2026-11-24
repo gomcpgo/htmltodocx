@@ -698,12 +698,25 @@ func TestBoxes(t *testing.T) {
 		pBdr    int // number of bordered paragraphs
 	}{
 		{
-			// Padding on a side with no border becomes a border in the
-			// background colour, so the shading reaches the padding edge.
+			// One paragraph keeps paragraph borders. Padding on a side with
+			// no border becomes a border in the background colour, so the
+			// shading reaches the padding edge.
 			name: "callout with a left rule, padding and a background",
+			html: `<div style="border-left:4px solid #0f766e;padding:12px 16px;background:#f0fdfa;border-radius:8px">One</div>`,
+			want: []string{`<w:pPr>` + callout + `</w:pPr>`, `One`},
+			pBdr: 1,
+		},
+		{
+			// More than one paragraph: a one-cell table, which every reader
+			// draws as one box.
+			name: "a box of several paragraphs is a one-cell table",
 			html: `<div style="border-left:4px solid #0f766e;padding:12px 16px;background:#f0fdfa;border-radius:8px"><p>One</p><p>Two</p></div>`,
-			want: []string{`<w:pPr>` + callout + `</w:pPr>`, `One`, `<w:pPr>` + callout + `</w:pPr>`, `Two`},
-			pBdr: 2,
+			want: []string{`<w:tblW w:w="9026" w:type="dxa"/>`, `<w:tblLayout w:type="fixed"/>`,
+				`<w:tcPr><w:tcW w:w="9026" w:type="dxa"/><w:tcBorders><w:left w:val="single" w:sz="24" w:space="0" w:color="0F766E"/></w:tcBorders>` +
+					`<w:shd w:val="clear" w:color="auto" w:fill="F0FDFA"/>` +
+					`<w:tcMar><w:top w:w="180" w:type="dxa"/><w:left w:w="240" w:type="dxa"/><w:bottom w:w="180" w:type="dxa"/><w:right w:w="240" w:type="dxa"/></w:tcMar></w:tcPr>`,
+				`<w:p><w:r><w:t>One</w:t></w:r></w:p>`, `<w:p><w:r><w:t>Two</w:t></w:r></w:p></w:tc>`},
+			wantNot: []string{`<w:pPr><w:shd`},
 		},
 		{
 			name:    "heading underline with padding",
@@ -746,11 +759,11 @@ func TestBoxes(t *testing.T) {
 			html: `<div style="border:1px solid #000;padding:8px"><p>outer</p>` +
 				`<div style="border-left:3px solid #f00;padding-left:8px"><p>inner</p></div><p>after</p></div>`,
 			want: []string{
-				`<w:ind w:left="135" w:right="135"/>`, `outer`,
-				`<w:pBdr><w:left w:val="single" w:sz="18" w:space="6" w:color="FF0000"/></w:pBdr><w:ind w:left="300" w:right="135"/>`, `inner`,
-				`<w:ind w:left="135" w:right="135"/>`, `after`,
+				`<w:tcMar><w:top w:w="120" w:type="dxa"/>`, `outer`,
+				`<w:pBdr><w:left w:val="single" w:sz="18" w:space="6" w:color="FF0000"/></w:pBdr><w:ind w:left="165"/>`, `inner`,
+				`after`, `</w:tc>`,
 			},
-			pBdr: 3,
+			pBdr: 1,
 		},
 		{
 			name: "cards in a grid row are boxes",
@@ -761,8 +774,8 @@ func TestBoxes(t *testing.T) {
 			// Word would draw adjacent boxes with identical borders as one.
 			name: "sibling boxes stay apart",
 			html: `<div style="border:1px solid #000"><p>a</p><p>b</p></div><div style="border:1px solid #000"><p>c</p></div><div style="border:1px solid #000">d</div>`,
-			want: []string{`w:color="000000"`, `>a<`, `w:color="000000"`, `>b<`, `w:color="000001"`, `>c<`, `w:color="000000"`, `>d<`},
-			pBdr: 4,
+			want: []string{`<w:tbl>`, `>a<`, `>b<`, `</w:tbl>`, `w:color="000000"`, `>c<`, `w:color="000001"`, `>d<`},
+			pBdr: 2,
 		},
 		{
 			name: "list items with a rule under each keep every rule",
@@ -771,14 +784,62 @@ func TestBoxes(t *testing.T) {
 			pBdr: 3,
 		},
 		{
-			name: "list items in a box carry its border",
+			name: "a list in a box is inside it",
 			html: `<div style="border:1px solid #000"><p>a</p><ul><li>b</li></ul></div>`,
+			want: []string{`<w:tbl>`, `>a<`, `<w:numPr>`, `>b<`, `</w:tc>`},
+		},
+		{
+			name: "a table in a box is inside it",
+			html: `<div style="border:1px solid #000;padding:8px"><table><tr><td>x</td></tr></table></div>`,
+			want: []string{`<w:tbl>`, `<w:tcMar>`, `<w:tbl>`, `>x<`, `</w:tbl>`, `<w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/>`, `</w:tc>`, `</w:tbl>`},
+		},
+		{
+			// The KPI card: a section with its own top rule stays inside
+			// the card.
+			name: "a ruled section stays inside its card",
+			html: `<div style="border:1px solid #e2e8f0;padding:15px 16px"><div>Website Visits</div><div>148,420</div>` +
+				`<div style="border-top:1px solid #f1f5f9;padding-top:8px">Sep: 129,965</div></div>`,
+			want: []string{`<w:tbl>`, `Website Visits`, `148,420`,
+				`<w:pBdr><w:top w:val="single" w:sz="6" w:space="6" w:color="F1F5F9"/></w:pBdr>`, `Sep: 129,965`, `</w:tc>`},
+			pBdr: 1,
+		},
+		{
+			name: "a box with a width keeps it, centred by auto margins",
+			html: `<div style="width:300px;margin:0 auto;border:1px solid #000;padding:8px"><p>a</p><p>b</p></div>`,
+			want: []string{`<w:tblW w:w="4500" w:type="dxa"/><w:jc w:val="center"/>`, `<w:gridCol w:w="4500"/>`},
+		},
+		{
+			// A rule under a section is a separator, not a box: it goes on
+			// the section's last paragraph, and the section is no table.
+			name: "a section with a rule under it",
+			html: `<section style="border-bottom:1px solid #e2e8f0;padding-bottom:28px"><h2>Summary</h2><p>One</p><p>Two</p></section><p>Next</p>`,
+			want: []string{`Summary`, `One`,
+				`<w:pPr><w:pBdr><w:bottom w:val="single" w:sz="6" w:space="21" w:color="E2E8F0"/></w:pBdr></w:pPr><w:r><w:t>Two</w:t>`,
+				`<w:p><w:r><w:t>Next</w:t>`},
+			wantNot: []string{`<w:tbl>`},
+			pBdr:    1,
+		},
+		{
+			name: "rules above and below a section with a table in it",
+			html: `<div style="border-top:2px solid #000;border-bottom:1px solid #ccc"><p>Intro</p><table><tr><td>x</td></tr></table></div>`,
+			want: []string{`<w:top w:val="single" w:sz="12" w:space="0" w:color="000000"/></w:pBdr></w:pPr><w:r><w:t>Intro`,
+				`</w:tbl>`, `<w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="6" w:space="0" w:color="CCCCCC"/></w:pBdr></w:pPr></w:p>`},
 			pBdr: 2,
 		},
 		{
-			name: "table in a box is indented to the box's content",
-			html: `<div style="border:1px solid #000;padding:8px"><table><tr><td>x</td></tr></table></div>`,
-			want: []string{`<w:tblInd w:w="135" w:type="dxa"/>`},
+			// Cards built as list items without markers are boxes like any
+			// other block, and their flex rows are laid out.
+			name: "a card list item without a marker",
+			html: `<ul style="list-style:none"><li style="display:flex;border:1px solid #eef2f7;padding:10px 12px">` +
+				`<div style="display:flex;width:24px;background:#dcfce7">&#10003;</div><div><strong style="display:block">Efficiency</strong><p>Leads up.</p></div></li></ul>`,
+			want:    []string{`<w:tbl>`, `<w:tcBorders>`, `w:fill="DCFCE7"`, `✓`, `Efficiency`, `Leads up.`, `</w:tc>`},
+			wantNot: []string{`<w:numPr>`},
+		},
+		{
+			// A page break inside a table is ignored, so it goes before it.
+			name: "a page break before a box table",
+			html: `<p>x</p><div style="page-break-before:always;border:1px solid #000"><p>a</p><p>b</p></div>`,
+			want: []string{`>x<`, `<w:pageBreakBefore/>`, `<w:tbl>`, `>a<`},
 		},
 		{
 			name:    "page borders and padding are not paragraph formatting",
@@ -936,21 +997,41 @@ func TestGeneratedContent(t *testing.T) {
 	}
 }
 
-// Nested boxes indent their content, but never squeeze it below an inch.
+// Nested boxes become nested tables up to a limit; deeper boxes use
+// paragraph borders inside the innermost table. Neither squeezes the text
+// below an inch.
 func TestNestedBoxesKeepTextWidth(t *testing.T) {
 	html := strings.Repeat(`<div style="border:2px solid #000;padding:30px">p`, 60) + strings.Repeat("</div>", 60)
+	parts := convert(t, html, nil)
+	checkPackage(t, parts)
 	got := body(t, html, nil)
+	if n := strings.Count(got, "<w:tbl>"); n != 5 {
+		t.Errorf("%d nested tables, want 5", n)
+	}
+	if n := strings.Count(got, ">p<"); n != 60 {
+		t.Errorf("%d paragraphs of text, want 60", n)
+	}
+	// The innermost cell is the narrowest; its content is its width less
+	// the borders (2px each) and padding (30px each).
+	cellW := 1 << 30
+	for _, m := range regexp.MustCompile(`<w:tcW w:w="(\d+)"`).FindAllStringSubmatch(got, -1) {
+		w, _ := strconv.Atoi(m[1])
+		cellW = min(cellW, w)
+	}
+	inner := cellW - 2*(30+450)
+	if inner < 1440 {
+		t.Fatalf("innermost cell leaves %d twips for text", inner)
+	}
 	re := regexp.MustCompile(`<w:ind w:left="(\d+)" w:right="(\d+)"/>`)
 	m := re.FindAllStringSubmatch(got, -1)
-	if len(m) < 60 {
-		t.Fatalf("found %d indented paragraphs, want 60", len(m))
+	if len(m) < 50 {
+		t.Fatalf("found %d indented paragraphs, want at least 50", len(m))
 	}
-	const textWidth = 9026 // A4 with one inch margins
 	for _, sm := range m {
 		left, _ := strconv.Atoi(sm[1])
 		right, _ := strconv.Atoi(sm[2])
-		if textWidth-left-right < 1440 {
-			t.Fatalf("left %d + right %d leaves less than an inch", left, right)
+		if inner-left-right < 1440 {
+			t.Fatalf("left %d + right %d leaves less than an inch of %d", left, right, inner)
 		}
 	}
 }
@@ -983,18 +1064,27 @@ func TestFlexAndGrid(t *testing.T) {
 		{
 			name: "space-between pair is split by a right tab",
 			html: `<div style="display:flex;justify-content:space-between"><span>Senior Engineer</span><span>2020 – Present</span></div>`,
-			want: []string{"Senior Engineer\t2020 – Present"},
+			want: []string{"Senior Engineer \t2020 – Present"},
 			xml:  []string{`<w:tabs><w:tab w:val="right" w:pos="9026"/></w:tabs>`},
+		},
+		{
+			// When the left item is too long for the right one to start
+			// after it, Word gives the tab no width; the space keeps the
+			// two items apart.
+			name: "a space before the tab keeps a long row apart",
+			html: `<div style="display:flex;justify-content:space-between"><span>BOARD &amp; LEADERSHIP BRIEFING FOR THE QUARTER ENDING</span><span>PERIOD ENDING SEPTEMBER 30, 2026</span></div>`,
+			want: []string{"BOARD & LEADERSHIP BRIEFING FOR THE QUARTER ENDING \tPERIOD ENDING SEPTEMBER 30, 2026"},
+			xml:  []string{`<w:t xml:space="preserve">BOARD &amp; LEADERSHIP BRIEFING FOR THE QUARTER ENDING </w:t></w:r><w:r><w:tab/>`},
 		},
 		{
 			name: "white space between items does not count",
 			html: "<div style='display:flex;justify-content:space-between'>\n  <span>L</span>\n  <span>R</span>\n</div>",
-			want: []string{"L\tR"},
+			want: []string{"L \tR"},
 		},
 		{
 			name: "three spaced items get centre and right stops",
 			html: `<div style="display:flex;justify-content:space-between"><b>a</b><b>b</b><b>c</b></div>`,
-			want: []string{"a\tb\tc"},
+			want: []string{"a \tb \tc"},
 			xml:  []string{`<w:tab w:val="center" w:pos="4513"/><w:tab w:val="right" w:pos="9026"/>`},
 		},
 		{
@@ -1012,7 +1102,7 @@ func TestFlexAndGrid(t *testing.T) {
 		{
 			name: "hidden and empty items leave no tab behind",
 			html: `<div style="display:flex;justify-content:space-between"><span>L</span><span style="display:none">H</span><span></span><span>R</span><span></span></div>`,
-			want: []string{"L\tR"},
+			want: []string{"L \tR"},
 		},
 		{
 			name: "items with block content become blocks",
@@ -1313,6 +1403,199 @@ func TestLargeTable(t *testing.T) {
 	checkPackage(t, parts)
 	if n := strings.Count(string(parts["word/document.xml"]), `w:fill="EEEEEE"`); n != 3000 {
 		t.Errorf("striped %d cells, want 3000", n)
+	}
+}
+
+// Small fixed-size boxes with a background are icon badges. They stay
+// inline, shaded as characters, instead of becoming a shaded paragraph
+// across the whole width.
+func TestBadges(t *testing.T) {
+	const nb = "\u00a0"
+	tests := []struct {
+		name    string
+		html    string
+		want    []string // paragraph texts
+		xml     []string // in order
+		wantNot []string
+	}{
+		{
+			name: "badge beside a label in a spread row",
+			html: `<div style="display:flex;justify-content:space-between"><span>Website Visits</span>` +
+				`<span style="display:flex;width:28px;height:28px;background:#eff6ff;color:#2563eb">&#8599;</span></div>`,
+			want:    []string{"Website Visits \t" + nb + "↗" + nb},
+			xml:     []string{`<w:tab w:val="right"`, `Website Visits`, `<w:shd w:val="clear" w:color="auto" w:fill="EFF6FF"/>`, `↗`},
+			wantNot: []string{`<w:pPr><w:shd`},
+		},
+		{
+			name: "badge before a block of text starts its first line",
+			html: `<div style="display:flex;gap:11px"><div style="display:flex;width:24px;height:24px;background:#dcfce7">&#10003;</div>` +
+				`<div><strong style="display:block">Organic search grew</strong><p>Up 18% on September.</p></div></div>`,
+			want:    []string{nb + "✓" + nb + " Organic search grew", "Up 18% on September."},
+			xml:     []string{`w:fill="DCFCE7"`, `✓`, `Organic search grew`},
+			wantNot: []string{`<w:pPr><w:shd`},
+		},
+		{
+			name: "a number before a block of text",
+			html: `<div style="display:flex"><span>1</span><div><p>First step</p><p>Details</p></div></div>`,
+			want: []string{"1 First step", "Details"},
+		},
+		{
+			name: "a wide box keeps paragraph shading",
+			html: `<div style="width:300px;background:#eeeeee">Wide box</div>`,
+			want: []string{"Wide box"},
+			xml:  []string{`<w:pPr><w:shd w:val="clear" w:color="auto" w:fill="EEEEEE"/>`},
+		},
+		{
+			name: "a small box with a sentence is not a badge",
+			html: `<div style="width:40px;background:#eeeeee">A longer note</div>`,
+			want: []string{"A longer note"},
+			xml:  []string{`<w:pPr><w:shd`},
+		},
+		{
+			name: "a badge before a table keeps its own line",
+			html: `<div style="display:flex"><span style="display:block;width:20px;background:#fef3c7">!</span><table><tr><td>cell</td></tr></table></div>`,
+			want: []string{nb + "!" + nb, "cell"},
+		},
+	}
+	for _, tt := range tests {
+		got := paragraphs(t, tt.html)
+		if strings.Join(got, "|") != strings.Join(tt.want, "|") {
+			t.Errorf("%s: paragraphs = %q, want %q", tt.name, got, tt.want)
+		}
+		doc := body(t, tt.html, nil)
+		pos := 0
+		for _, w := range tt.xml {
+			i := strings.Index(doc[pos:], w)
+			if i < 0 {
+				t.Errorf("%s: missing %s (in order) in\n%s", tt.name, w, doc)
+				break
+			}
+			pos += i + len(w)
+		}
+		for _, w := range tt.wantNot {
+			if strings.Contains(doc, w) {
+				t.Errorf("%s: unexpected %s in\n%s", tt.name, w, doc)
+			}
+		}
+	}
+}
+
+// gridCols returns the column widths of each table in document order.
+func gridCols(doc string) [][]int {
+	var out [][]int
+	re := regexp.MustCompile(`<w:gridCol w:w="(\d+)"/>`)
+	for _, grid := range regexp.MustCompile(`<w:tblGrid>(.*?)</w:tblGrid>`).FindAllStringSubmatch(doc, -1) {
+		var cols []int
+		for _, m := range re.FindAllStringSubmatch(grid[1], -1) {
+			w, _ := strconv.Atoi(m[1])
+			cols = append(cols, w)
+		}
+		out = append(out, cols)
+	}
+	return out
+}
+
+func sum(v []int) int {
+	t := 0
+	for _, x := range v {
+		t += x
+	}
+	return t
+}
+
+// Columns are sized from their content, as a browser's automatic table
+// layout does: no column is narrower than its longest word, and the room
+// left over goes to the columns with the most text.
+func TestTableColumnWidths(t *testing.T) {
+	const textWidth = 9026 // A4 with one inch margins
+
+	// A wide table like a channel breakdown: long names, short numbers.
+	var b strings.Builder
+	b.WriteString(`<table style="width:100%;font-size:12.5px"><thead><tr><th style="text-transform:uppercase">Channel</th>`)
+	for _, h := range []string{"Spend", "Visits", "Leads", "Share", "Conv. Rate", "CPL", "Leads MoM", "Signal"} {
+		b.WriteString("<th>" + h + "</th>")
+	}
+	b.WriteString("</tr></thead><tbody>")
+	for _, name := range []string{"Paid Search (Google &amp; Bing)", "Organic Search (SEO &amp; Content)", "Referral &amp; Partner Co-Marketing", "Blended Portfolio"} {
+		b.WriteString("<tr><td>" + name + "</td><td>$68,400</td><td>46,200</td><td>2,125</td><td>37.7%</td><td>4.60%</td><td>$32.19</td><td>+26.4%</td><td>Scale</td></tr>")
+	}
+	b.WriteString("</tbody></table>")
+	cols := gridCols(body(t, b.String(), nil))[0]
+	if len(cols) != 9 || sum(cols) > textWidth || sum(cols) < textWidth-9 {
+		t.Fatalf("wide table: columns %v (sum %d), want 9 filling %d", cols, sum(cols), textWidth)
+	}
+	for i := 1; i < 9; i++ {
+		if cols[0] <= cols[i] {
+			t.Errorf("wide table: the name column (%d) should be wider than column %d (%d): %v", cols[0], i, cols[i], cols)
+		}
+	}
+	// "$68,400" at 9.4pt is about 40pt of text plus the cell margins.
+	if cols[1] < 1000 {
+		t.Errorf("wide table: the spend column is %d twips, too narrow for $68,400: %v", cols[1], cols)
+	}
+	// "Co-Marketing" must fit on a line in the name column.
+	if cols[0] < 1400 {
+		t.Errorf("wide table: the name column is %d twips, narrower than its longest word: %v", cols[0], cols)
+	}
+
+	// A crowded table, like the dashboard's in its panel on A4: narrower
+	// cell margins make room so that words stay whole.
+	b.Reset()
+	b.WriteString(`<div style="border:1px solid #e2e8f0;padding:16px 18px"><table style="width:100%;font-size:12.5px"><thead><tr>`)
+	for _, h := range []string{"Channel", "Spend", "Visits", "Leads", "Lead Share", "Conv. Rate", "CPL", "Leads MoM", "Action Signal"} {
+		b.WriteString(`<th style="text-transform:uppercase;font-size:11px">` + h + "</th>")
+	}
+	b.WriteString(`</tr></thead><tbody><tr><td>Referral &amp; Partner Co-Marketing</td><td>$14,480</td><td>16,520</td><td>353</td><td>6.3%</td><td>2.14%</td><td>$41.02</td><td>+12.1%</td><td>CRO Landing Page</td></tr></tbody>`)
+	b.WriteString(`<tfoot><tr style="font-weight:700"><td>Total / Blended Portfolio</td><td>$160,180</td><td>148,420</td><td>5,640</td><td>100%</td><td>3.80%</td><td>$28.40</td><td>+21.8%</td><td>Exceeding Plan</td></tr></tfoot></table></div>`)
+	doc := body(t, b.String(), nil)
+	if !strings.Contains(doc, `<w:tblCellMar><w:left w:w="57" w:type="dxa"/><w:right w:w="57" w:type="dxa"/></w:tblCellMar>`) {
+		t.Errorf("crowded table: no narrow cell margins in\n%s", doc)
+	}
+	cols = gridCols(doc)[1]
+	// Bold "$160,180" is about 50pt of text.
+	if cols[1] < 1100 {
+		t.Errorf("crowded table: the spend column is %d twips, too narrow for $160,180: %v", cols[1], cols)
+	}
+	if !regexp.MustCompile(`<w:tcMar>`).MatchString(doc) || strings.Count(doc, "<w:tblCellMar>") != 1 {
+		t.Errorf("crowded table: only the inner table should get narrow margins")
+	}
+
+	// Text is measured in the style of the element holding it: semibold
+	// names and letter-spaced capitals are wider than the cell's own text.
+	b.Reset()
+	b.WriteString(`<table style="font-size:12.5px"><tr><th style="text-transform:uppercase;letter-spacing:0.2em;font-size:11px">Share</th><th>x</th></tr>`)
+	b.WriteString(`<tr><td><div style="font-weight:600;font-size:20px">Marketing</div></td><td>y</td></tr></table>`)
+	plain := gridCols(body(t, `<table style="font-size:12.5px"><tr><th>Share</th><th>x</th></tr><tr><td><div>Marketing</div></td><td>y</td></tr></table>`, nil))[0]
+	styled := gridCols(body(t, b.String(), nil))[0]
+	// 20px semibold "Marketing" is about 1.6 times as wide as 12.5px.
+	if styled[0] < plain[0]+(plain[0]-216)/2 {
+		t.Errorf("styled text: column %d, plain %d; inner styles were not measured", styled[0], plain[0])
+	}
+
+	// Without a width, the table shrinks to its content.
+	cols = gridCols(body(t, `<table><tr><td>a</td><td>bb</td></tr></table>`, nil))[0]
+	if sum(cols) > textWidth/3 {
+		t.Errorf("short table: columns %v should shrink to their content", cols)
+	}
+
+	// Declared widths are kept; the other columns share the rest.
+	cols = gridCols(body(t, `<table style="width:100%"><col style="width:50%"><tr><td>a</td><td>short</td><td>a much longer cell of text that wants room</td></tr></table>`, nil))[0]
+	if cols[0] != textWidth/2 {
+		t.Errorf("declared width: column 0 is %d, want %d: %v", cols[0], textWidth/2, cols)
+	}
+	if cols[2] <= cols[1] {
+		t.Errorf("declared width: the longer text should get more room: %v", cols)
+	}
+
+	// When the longest words cannot all fit, the widest column gives way
+	// first and the narrow ones keep their words whole.
+	long := strings.Repeat("Supercalifragilistic", 8)
+	cols = gridCols(body(t, `<table><tr><td>`+long+`</td><td>Revenue</td><td>Margin</td></tr></table>`, nil))[0]
+	if sum(cols) > textWidth {
+		t.Errorf("overfull table: columns %v exceed the text width", cols)
+	}
+	if cols[1] < 900 || cols[2] < 850 {
+		t.Errorf("overfull table: the short columns were squeezed: %v", cols)
 	}
 }
 

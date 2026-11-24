@@ -1,6 +1,7 @@
 package dom
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 
@@ -14,6 +15,9 @@ const (
 	maxTableCols = 63 // Word's limit
 	minColWidth  = 240
 	cellPadding  = 216 // left plus right cell margin of the table styles
+	// tightPadding is the left plus right cell margin of a table whose
+	// words would not fit with the usual one.
+	tightPadding = 114
 )
 
 // tcell is a cell placed on the table grid.
@@ -51,6 +55,7 @@ func spanAttr(n *html.Node, key string, limit int) int {
 }
 
 func (c *conv) table(n *html.Node, bc bctx, st style, bx box) {
+	c.flushCarry(&bc)
 	c.flushPara()
 	c.forcePendingNum(&bc)
 	if bx.breakBefore {
@@ -170,8 +175,11 @@ func (c *conv) table(n *html.Node, bc bctx, st style, bx box) {
 		tableW = min(c.resolveWidth(bx.width, &st, avail), avail)
 	}
 	t.Width = tableW
-	widths, known := c.columnWidths(rows, colLens, ncols, tableW, avail, &st)
+	widths, known, pad := c.columnWidths(rows, colLens, ncols, tableW, avail, &st)
 	t.Cols = widths
+	if pad != cellPadding {
+		t.CellMargin = pad / 2
+	}
 
 	// Borders.
 	cssBorders := bx.hasBorder()
@@ -235,8 +243,9 @@ func (c *conv) table(n *html.Node, bc bctx, st style, bx box) {
 					bidi:      cell.st.rtl,
 					link:      bc.link,
 					listLevel: -1,
-					avail:     max(w-cellPadding, minColWidth),
+					avail:     max(w-pad, minColWidth),
 					depth:     bc.depth + 3,
+					tables:    bc.tables + 1,
 				}
 				mc.Blocks = c.cellBlocks(cell.n, cbc)
 			}
@@ -393,10 +402,24 @@ func (c *conv) resolveWidth(l css.Length, st *style, avail int) int {
 }
 
 // columnWidths works out a width for every column. known[i] reports whether
-// column i's width came from the document rather than from an even split.
-func (c *conv) columnWidths(rows []*trow, colLens []css.Length, ncols, tableW, avail int, st *style) ([]int, []bool) {
-	widths := make([]int, ncols)
-	known := make([]bool, ncols)
+// column i's width is fixed: given by the document, or a share of a table
+// whose width is given. pad is the left plus right cell margin to use.
+//
+// Declared widths are kept. The other columns are sized from their content,
+// as a browser's automatic table layout does: each gets at least the width
+// of its longest word (its minimum), and the room left over is shared in
+// proportion to how much wider each would like to be (its maximum, the
+// width of its text on one line). A table without a width shrinks to its
+// content.
+//
+// When the minimums do not fit, room is found in steps before any word has
+// to break: narrower cell margins, then less slack on the text estimates.
+// If even that is not enough, the columns that want the most room give way
+// first, so short words in narrow columns stay whole.
+func (c *conv) columnWidths(rows []*trow, colLens []css.Length, ncols, tableW, avail int, st *style) (widths []int, known []bool, pad int) {
+	widths = make([]int, ncols)
+	known = make([]bool, ncols)
+	pad = cellPadding
 	total := tableW
 	if total == 0 {
 		total = avail
@@ -419,31 +442,116 @@ func (c *conv) columnWidths(rows []*trow, colLens []css.Length, ncols, tableW, a
 		}
 	}
 
-	sum, unknown := 0, 0
+	// Text widths of the columns still open, without margins or slack.
+	textMin := make([]int, ncols)
+	textMax := make([]int, ncols)
+	for _, r := range rows {
+		for _, cell := range r.cells {
+			if cell.n == nil || cell.origin != nil || cell.span != 1 || known[cell.col] {
+				continue
+			}
+			mn, mx, unsized := c.contentWidths(cell.n, &cell.st)
+			if unsized {
+				// A picture of unknown size or a nested table: give it
+				// room, as the even split used to.
+				mn, mx = max(mn, 1440), max(mx, total)
+			}
+			textMin[cell.col] = max(textMin[cell.col], mn)
+			textMax[cell.col] = max(textMax[cell.col], mx)
+		}
+	}
+
+	sum := 0
+	var open []int
 	for i := range widths {
 		if known[i] {
 			sum += widths[i]
 		} else {
-			unknown++
+			open = append(open, i)
 		}
 	}
-	if unknown > 0 {
-		share := max((total-sum)/unknown, minColWidth)
-		if sum == 0 {
-			share = max(total/ncols, minColWidth)
+	if len(open) > 0 {
+		rest := max(total-sum, minColWidth*len(open))
+		mins := make([]int, ncols)
+		maxs := make([]int, ncols)
+		measure := func(slack float64) (sumMin, sumMax int) {
+			for _, i := range open {
+				mins[i] = max(int(float64(textMin[i])*(1+slack))+pad, minColWidth)
+				maxs[i] = max(int(float64(textMax[i])*(1+slack))+pad, mins[i])
+				sumMin += mins[i]
+				sumMax += maxs[i]
+			}
+			return sumMin, sumMax
 		}
-		for i := range widths {
-			if !known[i] {
-				widths[i] = share
-				known[i] = tableW > 0
+		sumMin, sumMax := measure(widthSlack)
+		if sumMin > rest {
+			pad = tightPadding
+			if sumMin, sumMax = measure(widthSlack); sumMin > rest {
+				if bare, _ := measure(0); bare <= rest {
+					// Give up only as much of the slack as needed.
+					sumMin, sumMax = measure(widthSlack * float64(rest-bare) / float64(sumMin-bare))
+				} else {
+					// Some word breaks whatever is done; the long ones
+					// give way and the rest keep their room.
+					pad = cellPadding
+					sumMin, sumMax = measure(widthSlack)
+				}
 			}
 		}
-		sum += share * unknown
+		target := rest
+		if tableW == 0 {
+			target = min(rest, sumMax)
+		}
+		switch {
+		case sumMin >= target:
+			capMins(mins, open, target)
+			for _, i := range open {
+				widths[i] = mins[i]
+			}
+		case sumMax >= target:
+			// Between the two: each column grows from its minimum by the
+			// same fraction of the way to its maximum.
+			for _, i := range open {
+				widths[i] = mins[i] + int(int64(maxs[i]-mins[i])*int64(target-sumMin)/int64(sumMax-sumMin))
+			}
+		default:
+			// Room to spare in a table with a width: share it by content.
+			for _, i := range open {
+				widths[i] = maxs[i] + int(int64(target-sumMax)*int64(maxs[i])/int64(sumMax))
+			}
+		}
+		for _, i := range open {
+			sum += widths[i]
+			known[i] = tableW > 0
+		}
 	}
 	if limit := max(total, minColWidth*ncols); sum > limit {
 		for i := range widths {
 			widths[i] = max(widths[i]*limit/sum, 1)
 		}
 	}
-	return widths, known
+	return widths, known, pad
+}
+
+// capMins lowers the largest of the open columns' minimum widths until they
+// add up to target, never below minColWidth.
+func capMins(mins []int, open []int, target int) {
+	sorted := make([]int, len(open))
+	for k, i := range open {
+		sorted[k] = mins[i]
+	}
+	slices.Sort(sorted)
+	limit, rest := sorted[len(sorted)-1], target
+	for k, m := range sorted {
+		share := rest / (len(sorted) - k)
+		if m > share {
+			limit = share
+			break
+		}
+		rest -= m
+	}
+	limit = max(limit, minColWidth)
+	for _, i := range open {
+		mins[i] = min(mins[i], limit)
+	}
 }

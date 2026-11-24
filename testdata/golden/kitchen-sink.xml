@@ -403,9 +403,9 @@
 <w:tblW w:w="0" w:type="auto"/>
 </w:tblPr>
 <w:tblGrid>
-<w:gridCol w:w="3008"/>
-<w:gridCol w:w="3008"/>
-<w:gridCol w:w="3008"/>
+<w:gridCol w:w="1076"/>
+<w:gridCol w:w="549"/>
+<w:gridCol w:w="528"/>
 </w:tblGrid>
 <w:tr>
 <w:trPr>
@@ -613,8 +613,8 @@
 <w:tblW w:w="0" w:type="auto"/>
 </w:tblPr>
 <w:tblGrid>
-<w:gridCol w:w="4513"/>
-<w:gridCol w:w="4513"/>
+<w:gridCol w:w="774"/>
+<w:gridCol w:w="8252"/>
 </w:tblGrid>
 <w:tr>
 <w:tc>
@@ -637,7 +637,7 @@
 <w:tblW w:w="0" w:type="auto"/>
 </w:tblPr>
 <w:tblGrid>
-<w:gridCol w:w="4297"/>
+<w:gridCol w:w="1002"/>
 </w:tblGrid>
 <w:tr>
 <w:tc>
@@ -652,7 +652,15 @@
 </w:tc>
 </w:tr>
 </w:tbl>
-<w:p/>
+<w:p>
+<w:pPr>
+<w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/>
+<w:rPr>
+<w:sz w:val="2"/>
+<w:szCs w:val="2"/>
+</w:rPr>
+</w:pPr>
+</w:p>
 </w:tc>
 </w:tr>
 </w:tbl>

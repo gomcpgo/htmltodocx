@@ -45,10 +45,17 @@ func (c *conv) layoutChildren(n *html.Node, bc bctx, bx box) {
 	}
 	switch {
 	case anyBlock || (bx.layout == "flex" && bx.flexColumn) || (bx.layout == "grid" && len(starts) == 0):
-		for _, it := range items {
+		row := bx.layout == "flex" && !bx.flexColumn
+		for i, it := range items {
+			// In a row, a badge or number before a block of text sits at
+			// the start of the text's first line, as in a browser.
+			if row && i+1 < len(items) && items[i+1].block && leadItem(it) && c.holdLead(it, bc) {
+				continue
+			}
 			c.flushPara()
 			c.renderItem(it, bc)
 			c.flushPara()
+			c.flushCarry(&bc)
 		}
 	case bx.layout == "grid":
 		c.gridRows(items, bc, starts)
@@ -147,7 +154,7 @@ func (c *conv) flexRow(items []layoutItem, bc bctx, bx box) {
 				}
 				bc.tabs = append(bc.tabs, model.TabStop{Pos: left + (right-left)*k/(n-1), Align: align})
 			}
-			c.itemsInLine(items, bc, true)
+			c.itemsInLine(items, bc, true, true)
 			return
 		}
 	case "center":
@@ -155,7 +162,7 @@ func (c *conv) flexRow(items []layoutItem, bc bctx, bx box) {
 	case "flex-end", "end", "right":
 		bc.align = "right"
 	}
-	c.itemsInLine(items, bc, false)
+	c.itemsInLine(items, bc, false, false)
 }
 
 func (c *conv) gridRows(items []layoutItem, bc bctx, starts []int) {
@@ -166,24 +173,35 @@ func (c *conv) gridRows(items []layoutItem, bc bctx, starts []int) {
 	cols := len(starts) + 1
 	for r := 0; r < len(items); r += cols {
 		c.flushPara()
-		c.itemsInLine(items[r:min(r+cols, len(items))], bc, true)
+		c.itemsInLine(items[r:min(r+cols, len(items))], bc, true, false)
 		c.flushPara()
 	}
 }
 
 // itemsInLine renders items into the current line, separated by a tab or by
 // a space. A tab is taken back if the item after it adds nothing.
-func (c *conv) itemsInLine(items []layoutItem, bc bctx, tab bool) {
+//
+// spaceTab writes a space before each tab. Items spread out with centre and
+// right tab stops need it: when the text before a stop already reaches past
+// it, Word and Google Docs give the tab no width and the items touch. When
+// there is room the space is invisible, since the stop still places the
+// next item.
+func (c *conv) itemsInLine(items []layoutItem, bc bctx, tab, spaceTab bool) {
 	for i, it := range items {
 		if i > 0 && tab && c.para != nil {
 			p := c.para
 			p.trimTrailing()
 			at := len(p.items)
+			if spaceTab && at > 0 {
+				c.addText(" ", &bc, false) // may extend the last run
+			}
+			sep := len(p.items)
 			p.items = append(p.items, item{kind: itemTab, rp: c.runProps(&bc)})
 			p.lastSpace, p.spaceAfterBox = true, false
 			c.renderItem(it, bc)
-			if c.para == p && len(p.items) == at+1 {
+			if c.para == p && len(p.items) == sep+1 {
 				p.items = p.items[:at]
+				p.trimTrailing()
 			}
 			continue
 		}
@@ -302,6 +320,110 @@ func frValue(t string) (float64, bool) {
 		return 0, false
 	}
 	return f, true
+}
+
+// Badges. Models draw icons and markers as small fixed-size flex boxes with
+// a background: a 28px square holding "↗" beside a KPI label, or a 24px
+// square holding "✓" before a highlight. As blocks they would become a
+// shaded paragraph across the whole width with the icon on a line of its
+// own. They are laid out inline instead, shaded as characters.
+
+// maxBadgeWidth is the widest box taken for a badge, in points (48px).
+const maxBadgeWidth = 36
+
+// maxBadgeRunes is the most text a badge may hold.
+const maxBadgeRunes = 4
+
+// isBadge reports whether a block-level element is a badge: a box with a
+// small fixed width that holds a few characters and no blocks.
+func (c *conv) isBadge(n *html.Node, st *style, bx *box) bool {
+	if bx.width.Unit == "%" || isBlockLevel(n.Data, "inline") {
+		return false
+	}
+	switch n.Data {
+	case "td", "th", "tr", "thead", "tbody", "tfoot", "caption", "li", "dt", "dd", "body", "html", "img":
+		return false
+	}
+	pt, ok := bx.width.Points(st.emPt, c.rootPt)
+	if !ok || pt <= 0 || pt > maxBadgeWidth {
+		return false
+	}
+	return shortText(n, maxBadgeRunes)
+}
+
+// maxShortNodes bounds the nodes shortText visits; a badge has a few.
+const maxShortNodes = 32
+
+// shortText reports whether n holds between one and limit characters of
+// text, not counting white space, and no block elements or pictures.
+func shortText(n *html.Node, limit int) bool {
+	count, ok, visited := 0, true, 0
+	walkTree(n, func(ch *html.Node) bool {
+		if !ok || ch == n {
+			return ok
+		}
+		if visited++; visited > maxShortNodes {
+			ok = false
+			return false
+		}
+		switch ch.Type {
+		case html.TextNode:
+			for _, r := range ch.Data {
+				if r >= utf8.RuneSelf || !isCollapsible(byte(r)) {
+					count++
+				}
+			}
+			ok = count <= limit
+		case html.ElementNode:
+			if ch.Namespace != "" || isBlockLevel(ch.Data, "") || ch.Data == "img" || ch.Data == "br" {
+				ok = false
+			}
+		}
+		return ok
+	})
+	return ok && count > 0
+}
+
+// leadItem reports whether a flex item is a short inline item, such as a
+// badge or a step number, that belongs at the start of the block after it.
+func leadItem(it layoutItem) bool {
+	return it.node != nil && !it.block && it.node.Namespace == "" && shortText(it.node, maxBadgeRunes)
+}
+
+// holdLead renders a lead item and holds its content back, to be put at the
+// start of the next paragraph (see ensurePara). It reports whether it did.
+func (c *conv) holdLead(it layoutItem, bc bctx) bool {
+	if c.pendingNum != nil || c.carry != nil {
+		return false
+	}
+	c.flushPara()
+	c.renderItem(it, bc)
+	p := c.para
+	if p == nil {
+		return true
+	}
+	c.para = nil
+	p.trimTrailing()
+	if p.props.PageBreakBefore {
+		c.pendingBreak = true
+	}
+	if len(p.items) == 0 {
+		return true
+	}
+	c.carry = append(p.items, item{kind: itemText, text: []byte(" "), rp: c.runProps(&bc), link: bc.link})
+	return true
+}
+
+// flushCarry writes held lead content as a paragraph of its own. It is
+// called where the next block will not start with a paragraph, such as a
+// table, and when the block after the lead item made none.
+func (c *conv) flushCarry(bc *bctx) {
+	if c.carry == nil {
+		return
+	}
+	c.flushPara()
+	c.ensurePara(bc)
+	c.flushPara()
 }
 
 // boxSpaceBefore separates an inline-block box from a word it would touch.

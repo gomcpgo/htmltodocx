@@ -50,6 +50,9 @@ type style struct {
 	rtl                             bool
 	ws                              uint8
 	listStyle                       model.NumFormat
+	// letterSpacing is extra space after each character. Word runs do not
+	// carry it, but table layout measures with it.
+	letterSpacing css.Length
 
 	// What the paragraph or character style in effect already turns on.
 	// Switching one of these off needs an explicit "off" in the output;
@@ -101,6 +104,10 @@ type box struct {
 	bHasWid [4]bool
 
 	pad [4]float64 // padding in points, by side
+
+	// badge marks a small fixed-size block, such as an icon in a coloured
+	// square, that is laid out inline (see isBadge).
+	badge bool
 
 	// Generated content and counters. content is only used on ::before
 	// and ::after.
@@ -340,6 +347,9 @@ func (c *conv) computeStyle(n *html.Node, parent *style) (style, box) {
 		bx.bStyle, bx.pad = [4]string{}, [4]float64{}
 	}
 	finishColors(&st, &bx)
+	if bx.hasWidth && bx.display != "inline" && bx.display != "none" && c.isBadge(n, &st, &bx) {
+		bx.display, bx.layout, bx.inlineBox, bx.badge = "inline", "", true, true
+	}
 	if page {
 		if tag == "html" && st.sizeSet {
 			c.rootPt = st.emPt
@@ -882,6 +892,12 @@ func (c *conv) applyDecl(st *style, bx *box, parent *style, d css.Decl) {
 		}
 		if bg, ok := backgroundValue(val, d.Prop, backdropColor(parent.backdrop)); ok {
 			bx.bg, bx.bgSet = bg, true
+		}
+	case "letter-spacing":
+		if lv == "normal" {
+			st.letterSpacing = css.Length{}
+		} else if l, ok := css.ParseLength(lv); ok && l.Unit != "%" {
+			st.letterSpacing = l
 		}
 	case "font-weight":
 		if t, ok := isBold(lv); ok {

@@ -113,15 +113,15 @@
 </w:tblBorders>
 </w:tblPr>
 <w:tblGrid>
-<w:gridCol w:w="2256"/>
-<w:gridCol w:w="2256"/>
-<w:gridCol w:w="2256"/>
-<w:gridCol w:w="2256"/>
+<w:gridCol w:w="1704"/>
+<w:gridCol w:w="1704"/>
+<w:gridCol w:w="1704"/>
+<w:gridCol w:w="3912"/>
 </w:tblGrid>
 <w:tr>
 <w:tc>
 <w:tcPr>
-<w:tcW w:w="4512" w:type="dxa"/>
+<w:tcW w:w="3408" w:type="dxa"/>
 <w:gridSpan w:val="2"/>
 <w:vMerge w:val="restart"/>
 <w:tcBorders>
@@ -136,7 +136,7 @@
 </w:tc>
 <w:tc>
 <w:tcPr>
-<w:tcW w:w="2256" w:type="dxa"/>
+<w:tcW w:w="1704" w:type="dxa"/>
 <w:tcBorders>
 <w:bottom w:val="single" w:sz="6" w:space="0" w:color="CCCCCC"/>
 </w:tcBorders>
@@ -149,7 +149,7 @@
 </w:tc>
 <w:tc>
 <w:tcPr>
-<w:tcW w:w="2256" w:type="dxa"/>
+<w:tcW w:w="3912" w:type="dxa"/>
 </w:tcPr>
 <w:p/>
 </w:tc>
@@ -157,7 +157,7 @@
 <w:tr>
 <w:tc>
 <w:tcPr>
-<w:tcW w:w="4512" w:type="dxa"/>
+<w:tcW w:w="3408" w:type="dxa"/>
 <w:gridSpan w:val="2"/>
 <w:vMerge/>
 <w:tcBorders>
@@ -168,7 +168,7 @@
 </w:tc>
 <w:tc>
 <w:tcPr>
-<w:tcW w:w="2256" w:type="dxa"/>
+<w:tcW w:w="1704" w:type="dxa"/>
 <w:tcBorders>
 <w:bottom w:val="single" w:sz="6" w:space="0" w:color="CCCCCC"/>
 </w:tcBorders>
@@ -181,7 +181,7 @@
 </w:tc>
 <w:tc>
 <w:tcPr>
-<w:tcW w:w="2256" w:type="dxa"/>
+<w:tcW w:w="3912" w:type="dxa"/>
 </w:tcPr>
 <w:p/>
 </w:tc>
@@ -189,7 +189,7 @@
 <w:tr>
 <w:tc>
 <w:tcPr>
-<w:tcW w:w="2256" w:type="dxa"/>
+<w:tcW w:w="1704" w:type="dxa"/>
 <w:tcBorders>
 <w:bottom w:val="single" w:sz="6" w:space="0" w:color="CCCCCC"/>
 </w:tcBorders>
@@ -202,7 +202,7 @@
 </w:tc>
 <w:tc>
 <w:tcPr>
-<w:tcW w:w="2256" w:type="dxa"/>
+<w:tcW w:w="1704" w:type="dxa"/>
 <w:tcBorders>
 <w:bottom w:val="single" w:sz="6" w:space="0" w:color="CCCCCC"/>
 </w:tcBorders>
@@ -215,7 +215,7 @@
 </w:tc>
 <w:tc>
 <w:tcPr>
-<w:tcW w:w="2256" w:type="dxa"/>
+<w:tcW w:w="1704" w:type="dxa"/>
 <w:tcBorders>
 <w:bottom w:val="single" w:sz="6" w:space="0" w:color="CCCCCC"/>
 </w:tcBorders>
@@ -228,7 +228,7 @@
 </w:tc>
 <w:tc>
 <w:tcPr>
-<w:tcW w:w="2256" w:type="dxa"/>
+<w:tcW w:w="3912" w:type="dxa"/>
 <w:tcBorders>
 <w:bottom w:val="single" w:sz="6" w:space="0" w:color="CCCCCC"/>
 </w:tcBorders>
@@ -248,7 +248,7 @@
 <w:tblW w:w="0" w:type="auto"/>
 </w:tblPr>
 <w:tblGrid>
-<w:gridCol w:w="9026"/>
+<w:gridCol w:w="1038"/>
 </w:tblGrid>
 <w:tr>
 <w:trPr>
@@ -320,8 +320,8 @@
 <w:tblW w:w="0" w:type="auto"/>
 </w:tblPr>
 <w:tblGrid>
-<w:gridCol w:w="4513"/>
-<w:gridCol w:w="4513"/>
+<w:gridCol w:w="2318"/>
+<w:gridCol w:w="1219"/>
 </w:tblGrid>
 <w:tr>
 <w:tc>
@@ -353,7 +353,7 @@
 <w:tblW w:w="0" w:type="auto"/>
 </w:tblPr>
 <w:tblGrid>
-<w:gridCol w:w="9026"/>
+<w:gridCol w:w="633"/>
 </w:tblGrid>
 <w:tr>
 <w:tc>
@@ -375,7 +375,7 @@
 <w:tblW w:w="0" w:type="auto"/>
 </w:tblPr>
 <w:tblGrid>
-<w:gridCol w:w="9026"/>
+<w:gridCol w:w="1955"/>
 </w:tblGrid>
 <w:tr>
 <w:tc>
@@ -424,7 +424,7 @@
 <w:tblW w:w="0" w:type="auto"/>
 </w:tblPr>
 <w:tblGrid>
-<w:gridCol w:w="8810"/>
+<w:gridCol w:w="794"/>
 </w:tblGrid>
 <w:tr>
 <w:tc>
@@ -439,7 +439,15 @@
 </w:tc>
 </w:tr>
 </w:tbl>
-<w:p/>
+<w:p>
+<w:pPr>
+<w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/>
+<w:rPr>
+<w:sz w:val="2"/>
+<w:szCs w:val="2"/>
+</w:rPr>
+</w:pPr>
+</w:p>
 </w:tc>
 </w:tr>
 </w:tbl>

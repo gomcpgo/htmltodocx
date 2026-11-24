@@ -56,17 +56,28 @@ Paragraphs are collected as a flat list of items and trimmed when the block ends
 
 ### Boxes: borders and padding
 
-A block with a border, or with a background and padding, becomes paragraph borders (`w:pBdr`) on every paragraph inside it (`boxBorders` in `internal/dom/convert.go`). Word draws adjacent paragraphs with identical borders and indents as one box, so all paragraphs of a CSS box share one set of borders and one pair of indents; a callout of three paragraphs is one box in Word.
+A block with a border, or with a background and padding, is a box (`boxBlock` in `internal/dom/convert.go`). Its content is converted first, as if inside a table cell, and then drawn one of two ways:
 
-- **Padding becomes the border's distance from the text** (`w:space`, in points). Word caps it at 31pt, so larger padding is capped.
-- **Indents grow by each border's width plus its spacing.** Word draws a paragraph border outside the indent, so this puts the border where the CSS box starts rather than in the margin. The right inset also narrows the width that tables, images and tab stops are fitted to. However deep boxes nest, at least an inch is left for the text.
-- **Padding on a shaded side without a border** is drawn as a hairline border in the background colour. Shading fills a paragraph only up to its borders, so this is what makes the background cover the padding, as in a browser. With no background, padding on a side without a border draws nothing and is ignored, so wrappers such as `.container { padding: 20px }` do not indent the whole document.
-- **Sibling boxes are kept apart.** Two cards in a row, or list items that each have a rule under them, would otherwise merge into one box, with one rule under the last item. When a box's first paragraph follows a paragraph with equal borders from another box, the lowest bit of its border colours is flipped: invisible, but enough to make the borders differ.
-- **A nested box replaces the outer box's borders** for its own paragraphs. A paragraph has one set of borders, and an inner box drawn at its own indent reads better than the outer box's borders around it.
-- **Rounded corners and shadows are dropped silently.** They are decoration, and Word cannot draw them on paragraphs.
-- **Not attempted:** borders on `html`, `body` and inline elements; percentage padding; vertical padding on a side that draws nothing.
+- **One paragraph keeps paragraph borders** (`w:pBdr`): a heading's underline, a one-line callout, a pill, a card footer with a rule above it. Every reader draws the borders of a single paragraph whole. The paragraph is moved from the cell's frame to the page's: its indents grow by each border's width plus its spacing (Word draws a paragraph border outside the indent), and its tab stops move with it.
+- **Anything more becomes a one-cell table.** CSS borders become cell borders, the background becomes cell shading and the padding becomes cell margins (`w:tcMar`). The table takes the width left at that point, or the box's own `width`, centred by auto margins; its layout is fixed. Lists, tables and nested boxes stay inside the box, and the row may break across pages.
 
-Limitation: a box whose content has different indents, such as a list or a nested box, is drawn by Word as several boxes stacked, since Word only joins paragraphs whose indents match. A table also splits a box, and is not inside its border. A single-cell table would hold any content, but it would turn every bordered section of a document, and often the whole page wrapper, into a table, which is worse to edit and to break across pages.
+Why not paragraph borders throughout: Word joins adjacent paragraphs with identical borders and indents into one box, but other readers do not. Word for the web draws the sides of each paragraph only beside its own text, so a card of a heading and a paragraph broke into fragments, and any part of a box with different indents or borders (a list, a ruled footer) was drawn outside it. Every reader draws a table cell as one box. A single paragraph stays a paragraph because a table for every underlined heading would be worse to edit.
+
+- **A rule above or below a section is not a box.** A block whose only decoration is a top or bottom border, with no background, such as `.report-section { border-bottom: 1px solid; padding-bottom: 28px }`, is converted as usual, and the rule goes on its first or last paragraph (`ruledBlock`). Where the section starts or ends with a table, an empty paragraph between the table and the rule carries it, standing in for the padding, so the rule does not merge with the table's border. As a table, a section separator turned the whole section into one cell, and Word for the web drew the cell's border again wherever the row broke across a page.
+- **List items without markers** that are boxes or flex and grid containers, such as a list of cards with `list-style: none`, are laid out like any block. A list item with a marker keeps paragraph borders, since a table cannot carry its number, but its flex layout is still applied.
+- **Padding** becomes the border's distance from the text (`w:space`, at most 31pt) for a paragraph, and the cell margin for a table. On a shaded side without a border, a paragraph gets a hairline border in the background colour, since shading fills a paragraph only up to its borders; a cell is shaded to its edges anyway. With no background, padding on a side without a border draws nothing, so wrappers such as `.container { padding: 20px }` are not boxes.
+- **Nesting** is capped at five tables, counting real tables (`maxBoxTables`). Deeper boxes, boxes too narrow for an inch of text, and a box that would carry a list item's marker use paragraph borders inside the innermost table, indented as above, with at least an inch left for the text.
+- **Sibling boxes are kept apart.** Two adjacent one-paragraph boxes with equal borders would merge into one in Word, as would list items that each have a rule under them. When a bordered paragraph follows one with equal borders, the lowest bit of its border colours is flipped: invisible, but enough to make the borders differ. Tables need no such care: the writer puts a paragraph between adjacent tables, which Word would otherwise join.
+- **A page break before a box** that becomes a table is written on an empty paragraph before it, since Word ignores page breaks inside tables.
+- **The paragraph ending a cell.** A cell must end with a paragraph. After a nested table that paragraph is set to one point high, so a box ending with a table has no blank line at its foot.
+- **Rounded corners and shadows are dropped silently.** They are decoration that neither paragraphs nor cells can draw.
+- **Not attempted:** borders on `html`, `body` and inline elements; percentage padding; list items with a marker becoming tables.
+
+### Badges
+
+Models draw icons as small fixed-size flex boxes with a background: a 28px square holding "↗" beside a KPI label. As blocks they became a shaded band across the page with the icon on its own line. A block-level element with a fixed width of at most 48px and at most four characters of text, with no blocks or pictures inside, is laid out inline instead (`isBadge` in `internal/dom/layout.go`). Its background becomes character shading, with a no-break space on each side for the room around the icon. In a spread flex row it takes its place in the tab-stop layout like any inline item.
+
+In a flex row, a short inline item (a badge, a step number) followed by a block of text is put at the start of that block's first paragraph, as a browser shows it beside the text. If the block starts with a table or a rule, or makes no paragraph, the item keeps a line of its own.
 
 ### Generated content
 
@@ -93,7 +104,7 @@ Inline `<svg>` and SVG files in `<img>` become pictures with two parts: the draw
 Word has no side-by-side layout for paragraphs, but flex and grid items must at least stay apart: in a browser each item is its own box, so `<span>Core</span><span>Go</span>` in a grid reads as two cells, while the plain white-space rules would glue it into "CoreGo". The converter follows CSS in treating every item as a separate box (text runs that are only white space are not items, empty items are skipped) and approximates the arrangement in `internal/dom/layout.go`:
 
 - If any item is block-level, or the flex direction is a column, or a grid has one column (the CSS default) or a width-dependent column count (`auto-fill`, `auto-fit`), every item becomes its own block. CSS "blockifies" flex and grid items, so this is the faithful reading when there is no horizontal layout.
-- A flex row of inline items stays one paragraph. With `justify-content: space-between`, `space-around` or `space-evenly`, items are separated by tabs; the last stop is right-aligned at the right edge and any in between are centred, which reproduces the common "title … date" line. Otherwise items are separated by a space, standing in for `gap`, and `justify-content: center` or `flex-end` aligns the paragraph.
+- A flex row of inline items stays one paragraph. With `justify-content: space-between`, `space-around` or `space-evenly`, items are separated by tabs; the last stop is right-aligned at the right edge and any in between are centred, which reproduces the common "title … date" line. A space is written before each tab: when the text before a stop already reaches past it, Word and Google Docs give the tab no width and the items would touch. When there is room the space is invisible. Otherwise items are separated by a space, standing in for `gap`, and `justify-content: center` or `flex-end` aligns the paragraph.
 - A grid of inline items becomes one paragraph per grid row, items separated by tabs, with left tab stops where the columns start. Column widths come from `grid-template-columns` (lengths, percentages, `fr`, `minmax()` by its maximum, `repeat()` with a fixed count) and the column gap. At most 32 columns are taken from `repeat()`.
 - `inline-block`, `inline-flex` and `inline-grid` boxes stay inline, with a space inserted when a letter or digit would otherwise touch them, so badges and pills do not run into the next word ("1 Summary", not "1Summary").
 
@@ -115,7 +126,9 @@ Borders:
 - `border="0"`, or CSS that removes the table's border, gives a borderless table.
 - Otherwise the table gets a thin grid. A browser would draw an unstyled table with no borders at all, but an invisible grid is rarely what someone wants in a Word document. This is a deliberate departure.
 
-Width: tables shrink to fit their content, as in a browser, unless a width is given.
+Width: tables shrink to fit their content, as in a browser, unless a width is given. Column widths follow the browser's automatic table layout (`columnWidths` in `internal/dom/table.go`). Widths given on `col`, `th` and `td` are kept. Each other column gets at least its minimum, the width of its longest word, and the room left over is shared in proportion to how much more each would take to fit its text on one line. Before this, columns were equal, and a narrow first column of names broke words in the middle ("Organi / c Search").
+
+Text is measured without fonts (`internal/dom/measure.go`): each character has an estimated width by class (narrow, digit, lower case, capital, wide CJK), scaled by the font size of the element holding the text, with more for bold, upper case and `letter-spacing`. Estimates get 15% of slack, because the reader may substitute a wider font. When the minimums do not fit, room is found in steps before any word breaks: cell margins narrow from 0.075 to 0.04 inch, then the slack shrinks as far as needed. If even bare minimums do not fit, the normal margins are kept and the columns with the longest words give way first, so short words stay whole. A picture without a `width` attribute or a nested table cannot be measured, so its column is given room as if it held a long line.
 
 ### Links and bookmarks
 
@@ -163,7 +176,7 @@ The schema imports the `xml:` namespace without saying where to find it. Add a s
 
 ### Not yet checked automatically
 
-Opening the files in Microsoft Word, Google Docs and LibreOffice. Schema validity and a clean round trip are strong evidence, but they are not the same as Word rendering the file as intended. Do this by hand before a release, and after any change to layout, boxes, tables or images. Check more than one application, because they differ: Word for the web draws paragraph borders only beside each paragraph's text, so a box made of several bordered paragraphs breaks apart, while Google Docs draws it whole.
+Opening the files in Microsoft Word, Google Docs and LibreOffice. Schema validity and a clean round trip are strong evidence, but they are not the same as Word rendering the file as intended. Do this by hand before a release, and after any change to layout, boxes, tables or images. Check more than one application, because they differ: Word for the web draws paragraph borders only beside each paragraph's text, so a box made of several bordered paragraphs broke apart while Google Docs drew it whole. That is why boxes of more than one paragraph are now tables.
 
 ## Roadmap
 

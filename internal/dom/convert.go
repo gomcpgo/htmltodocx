@@ -103,6 +103,7 @@ type bctx struct {
 	listBase    int
 	avail       int // width available to content, twips
 	depth       int
+	tables      int // tables this content is nested in
 }
 
 type conv struct {
@@ -120,6 +121,9 @@ type conv struct {
 	pendingNum       *pendingNum
 	pendingBookmarks []string
 	pendingBreak     bool
+	// carry is inline content held for the start of the next paragraph: a
+	// badge or number that comes before a block in a flex row.
+	carry []item
 
 	ids        map[string]bool   // every id and anchor name in the document
 	refs       map[string]bool   // fragments that some link points at
@@ -421,6 +425,7 @@ func (c *conv) element(n *html.Node, bc bctx) {
 	case "img":
 		c.image(n, bc, st, bx)
 	case "hr":
+		c.flushCarry(&bc)
 		c.flushPara()
 		if bx.breakBefore {
 			c.pendingBreak = true
@@ -497,12 +502,21 @@ func (c *conv) generic(n *html.Node, bc bctx, st style, bx box, quote bool) {
 	}
 	bc.st = st
 	c.maybeBookmark(n, false)
+	// A shaded badge gets a no-break space on each side, standing in for
+	// the room around its icon.
+	pad := bx.badge && st.runBg != ""
 	if quote {
 		c.text("“", &bc)
+	}
+	if pad {
+		c.text("\u00a0", &bc)
 	}
 	c.generated(n, &bc, css.Before)
 	c.children(n, bc)
 	c.generated(n, &bc, css.After)
+	if pad {
+		c.text("\u00a0", &bc)
+	}
 	if quote {
 		c.text("”", &bc)
 	}
@@ -538,13 +552,14 @@ func (c *conv) enterBlock(bc *bctx, st style, bx box) {
 // text that Word accepts, in points.
 const maxBorderSpace = 31
 
-// boxBorders gives the paragraphs inside a block box the box's borders and
-// padding. Paragraph borders are drawn outside the indents, so the indents
-// grow by each border's width and spacing and the border lands where the box
-// starts. Rounded corners and shadows cannot be drawn and are ignored.
-func (c *conv) boxBorders(bc *bctx, bx *box, shaded bool) {
-	var bs [4]model.Border
-	drawn := false
+// boxEdges returns the paragraph borders that draw a block box: its CSS
+// borders, with padding as each border's distance from the text. Shading
+// fills a paragraph up to its borders, so padding on a shaded side without
+// a border becomes a hairline in the background colour, and the shading
+// covers the padding as it does in a browser. drawn is false when the box
+// draws nothing. Rounded corners and shadows cannot be drawn and are
+// ignored.
+func boxEdges(bx *box, shade string, shaded bool) (bs [4]model.Border, drawn bool) {
 	for side := range bs {
 		b := bx.border(side)
 		pad := bx.pad[side]
@@ -552,27 +567,35 @@ func (c *conv) boxBorders(bc *bctx, bx *box, shaded bool) {
 			if !shaded || pad <= 0 {
 				continue
 			}
-			// Shading fills a paragraph up to its borders. Padding on a side
-			// without one becomes a hairline in the background colour, so
-			// the shading covers the padding as it does in a browser.
-			b = model.Border{Style: "single", Size: 2, Color: bc.shade}
+			b = model.Border{Style: "single", Size: 2, Color: shade}
 		}
 		b.Space = min(int(math.Round(pad)), maxBorderSpace)
 		bs[side] = b
 		drawn = true
 	}
+	return bs, drawn
+}
+
+// borderInset is how far a paragraph border and its spacing reach into the
+// box, in twips. Paragraph borders are drawn outside the indents, so the
+// indents grow by this much to put the border where the box starts.
+func borderInset(b model.Border) int {
+	if b.Style == "" {
+		return 0
+	}
+	return int(math.Round((float64(b.Size)/8 + float64(b.Space)) * 20))
+}
+
+// boxBorders gives the paragraphs inside a block box the box's borders and
+// padding, and indents them so the borders land where the box starts.
+func (c *conv) boxBorders(bc *bctx, bx *box, shaded bool) {
+	bs, drawn := boxEdges(bx, bc.shade, shaded)
 	if !drawn {
 		return
 	}
-	inset := func(side int) int {
-		if bs[side].Style == "" {
-			return 0
-		}
-		return int(math.Round((float64(bs[side].Size)/8 + float64(bs[side].Space)) * 20))
-	}
 	// Keep at least an inch for the text, however deep boxes are nested.
-	bc.indent = min(bc.indent+inset(model.Left), c.opt.TextWidth*2/3, max(bc.indent, bc.avail-1440))
-	right := min(inset(model.Right), max(0, bc.avail-bc.indent-1440))
+	bc.indent = min(bc.indent+borderInset(bs[model.Left]), c.opt.TextWidth*2/3, max(bc.indent, bc.avail-1440))
+	right := min(borderInset(bs[model.Right]), max(0, bc.avail-bc.indent-1440))
 	bc.indentRight += right
 	bc.avail -= right
 	bc.border = &bs
@@ -613,7 +636,17 @@ func (c *conv) block(n *html.Node, bc bctx, st style, bx box, o blockOpts) {
 	if bx.breakBefore {
 		c.pendingBreak = true
 	}
-	c.enterBlock(&bc, st, bx)
+	if !c.boxBlock(n, bc, st, bx, o) {
+		c.enterBlock(&bc, st, bx)
+		c.blockBody(n, bc, st, bx, o)
+	}
+	if bx.breakAfter {
+		c.pendingBreak = true
+	}
+}
+
+// blockBody converts the content of a block whose context is set up.
+func (c *conv) blockBody(n *html.Node, bc bctx, st style, bx box, o blockOpts) {
 	if o.style != "" {
 		bc.paraStyle = o.style
 	}
@@ -636,9 +669,219 @@ func (c *conv) block(n *html.Node, bc bctx, st style, bx box, o blockOpts) {
 	}
 	c.generated(n, &bc, css.After)
 	c.flushPara()
-	if bx.breakAfter {
-		c.pendingBreak = true
+}
+
+// maxBoxTables is how deeply boxes nest as tables. Deeper boxes are drawn
+// with paragraph borders inside the innermost table.
+const maxBoxTables = 5
+
+// boxBlock draws a block box that has a border, or a background and
+// padding. The content is converted first, as the inside of a table cell:
+//
+//   - A single paragraph keeps paragraph borders (w:pBdr), which every
+//     reader draws whole around one paragraph: a heading's underline, a
+//     one-line callout, a pill.
+//   - Anything more becomes a one-cell table: the borders become cell
+//     borders, the background cell shading and the padding cell margins.
+//     Readers differ in how they join the borders of adjacent paragraphs
+//     (Word for the web draws the sides of each paragraph apart), but all
+//     draw a table cell as one box, with lists, tables and nested boxes
+//     inside it.
+//
+// It returns false, having done nothing, when the box draws nothing or must
+// use paragraph borders throughout: nested too deep, too narrow, or holding
+// the marker of a list item, which a table cell cannot carry.
+func (c *conv) boxBlock(n *html.Node, bc bctx, st style, bx box, o blockOpts) bool {
+	if c.pendingNum != nil || bc.tables >= maxBoxTables {
+		return false
 	}
+	shade, shaded := boxShade(&bc, &bx)
+	edges, drawn := boxEdges(&bx, shade, shaded)
+	if !drawn {
+		return false
+	}
+	if !shaded && edges[model.Left].Style == "" && edges[model.Right].Style == "" {
+		c.ruledBlock(n, bc, st, bx, o, edges)
+		return true
+	}
+
+	// The box's place: the margin and the tag's own indent are outside it.
+	indent := bc.indent
+	if bx.marginLeft > 0 {
+		indent = min(indent+bx.marginLeft, c.opt.TextWidth*2/3)
+	}
+	if o.indent > 0 {
+		indent = min(indent+o.indent, c.opt.TextWidth*2/3)
+	}
+	width := bc.avail - indent
+	explicit := false
+	if bx.hasWidth {
+		if w := c.resolveWidth(bx.width, &st, width); w > 0 && w < width {
+			width, explicit = w, true
+		}
+	}
+	var borders [4]model.Border
+	var margins [4]int
+	hasBorder := false
+	inner := width
+	for side := range borders {
+		borders[side] = bx.border(side)
+		margins[side] = int(math.Round(bx.pad[side] * 20))
+		if borders[side].Style != "" {
+			hasBorder = true
+			inner -= borders[side].Size * 20 / 8
+		}
+		if side == model.Left || side == model.Right {
+			inner -= margins[side]
+		}
+	}
+	if inner < 1440 {
+		return false
+	}
+
+	cb := bctx{
+		st:        st,
+		paraStyle: bc.paraStyle,
+		align:     st.align,
+		line:      st.line,
+		firstLine: st.textIndent,
+		bidi:      st.rtl,
+		shade:     shade,
+		link:      bc.link,
+		listLevel: -1,
+		avail:     inner,
+		depth:     bc.depth,
+		tables:    bc.tables + 1,
+	}
+	o.indent = 0
+	var blocks []model.Block
+	savedSink, pageBreak := c.sink, c.pendingBreak
+	c.sink, c.pendingBreak = &blocks, false
+	c.blockBody(n, cb, st, bx, o)
+	c.sink = savedSink
+
+	if len(blocks) == 0 {
+		c.pendingBreak = c.pendingBreak || pageBreak
+		return true
+	}
+	if p, ok := blocks[0].(*model.Paragraph); ok && len(blocks) == 1 && p.Props.Num == nil {
+		// Move the paragraph from the cell's frame to the page's.
+		pp := &p.Props
+		left := indent + borderInset(edges[model.Left])
+		pp.IndentLeft += left
+		pp.IndentRight += bc.indentRight + (bc.avail - indent - width) + borderInset(edges[model.Right])
+		if len(pp.Tabs) > 0 {
+			tabs := make([]model.TabStop, len(pp.Tabs))
+			for i, t := range pp.Tabs {
+				tabs[i] = model.TabStop{Pos: t.Pos + left, Align: t.Align}
+			}
+			pp.Tabs = tabs
+		}
+		pp.Borders = &edges
+		pp.PageBreakBefore = pp.PageBreakBefore || pageBreak
+		pp.KeepNext = pp.KeepNext || bc.keepNext
+		c.appendBlock(p)
+		return true
+	}
+
+	cell := model.Cell{Blocks: blocks, Width: width, Margins: &margins}
+	if hasBorder {
+		cell.Borders = &borders
+	}
+	if shaded {
+		cell.Shade = shade
+		// The cell is shaded; its paragraphs need not be.
+		for _, b := range blocks {
+			if p, ok := b.(*model.Paragraph); ok && p.Props.Shade == shade {
+				p.Props.Shade = ""
+			}
+		}
+	}
+	t := &model.Table{
+		Cols:   []int{width},
+		Rows:   []model.Row{{Cells: []model.Cell{cell}}},
+		Indent: indent,
+		Width:  width,
+		Fixed:  true,
+	}
+	if explicit && bx.autoLeft && bx.autoRight {
+		t.Align = "center"
+	}
+	if pageBreak {
+		// Word ignores a page break inside a table.
+		c.appendBlock(&model.Paragraph{Props: model.ParaProps{PageBreakBefore: true}})
+	}
+	c.appendBlock(t)
+	return true
+}
+
+// boxShade returns the background a block box draws: the colour, and
+// whether it is drawn at all. White is not drawn on the white page.
+func boxShade(bc *bctx, bx *box) (shade string, shaded bool) {
+	if bx.bgSet && !(bx.bg == "FFFFFF" && bc.shade == "") {
+		return bx.bg, bx.bg != ""
+	}
+	return bc.shade, false
+}
+
+// ruledBlock draws a block whose only decoration is a rule above or below
+// it, such as a section with a separator under it. That is not a box: the
+// content is converted as usual, the top rule goes on its first paragraph
+// and the bottom rule on its last. Where the content starts or ends with a
+// table, an empty paragraph between it and the rule carries the rule.
+func (c *conv) ruledBlock(n *html.Node, bc bctx, st style, bx box, o blockOpts, edges [4]model.Border) {
+	plain := bx
+	plain.bStyle = [4]string{}
+	c.enterBlock(&bc, st, plain)
+	var blocks []model.Block
+	saved := c.sink
+	c.sink = &blocks
+	c.blockBody(n, bc, st, bx, o)
+	c.sink = saved
+	if len(blocks) == 0 {
+		return
+	}
+	rule := func(i, side int) bool {
+		p, ok := blocks[i].(*model.Paragraph)
+		if !ok {
+			return false
+		}
+		var b [4]model.Border
+		if p.Props.Borders != nil {
+			b = *p.Props.Borders // shared with the rest of a nested box
+		}
+		if b[side].Style == "" {
+			b[side] = edges[side]
+			p.Props.Borders = &b
+		}
+		return true
+	}
+	// ruleAlone is an empty paragraph drawing rule e on the given side.
+	ruleAlone := func(e model.Border, side int) model.Block {
+		e.Space = 0
+		var b [4]model.Border
+		b[side] = e
+		return &model.Paragraph{Props: model.ParaProps{IndentLeft: bc.indent, IndentRight: bc.indentRight, Borders: &b}}
+	}
+	// The empty paragraph stands in for the padding: it sits between the
+	// table and the rule, so the rule does not merge with a table border.
+	if edges[model.Top].Style != "" && !rule(0, model.Top) {
+		blocks = append([]model.Block{ruleAlone(edges[model.Top], model.Top)}, blocks...)
+	}
+	if edges[model.Bottom].Style != "" && !rule(len(blocks)-1, model.Bottom) {
+		blocks = append(blocks, ruleAlone(edges[model.Bottom], model.Bottom))
+	}
+	for _, b := range blocks {
+		c.appendBlock(b)
+	}
+}
+
+// appendBlock adds a finished block to the current sink.
+func (c *conv) appendBlock(b model.Block) {
+	if p, ok := b.(*model.Paragraph); ok && p.Props.Borders != nil && len(*c.sink) > 0 {
+		separateBoxes((*c.sink)[len(*c.sink)-1], p.Props.Borders)
+	}
+	*c.sink = append(*c.sink, b)
 }
 
 // preformatted handles the body of a <pre>. The parser has already dropped
@@ -716,6 +959,10 @@ func (c *conv) ensurePara(bc *bctx) {
 		p.items = append(p.items, item{kind: itemBookmark, text: []byte(name)})
 	}
 	c.pendingBookmarks = c.pendingBookmarks[:0]
+	if c.carry != nil {
+		p.items = append(p.items, c.carry...)
+		c.carry = nil
+	}
 	c.para = p
 }
 
@@ -919,10 +1166,7 @@ func (c *conv) flushPara() {
 		}
 		return
 	}
-	if b := para.Props.Borders; b != nil && len(*c.sink) > 0 {
-		separateBoxes((*c.sink)[len(*c.sink)-1], b)
-	}
-	*c.sink = append(*c.sink, para)
+	c.appendBlock(para)
 }
 
 // forcePendingNum writes an empty list item when the item's marker has not
@@ -1102,6 +1346,17 @@ func (c *conv) listItem(n *html.Node, bc bctx, numID, level int) {
 	}
 	bc.depth++
 	bx.marginLeft = 0
+	if c.doc.Nums[numID-1].Format == model.NumNone {
+		// An item without a marker that is a box or a flex or grid
+		// container, such as a card in a list of cards, is laid out like
+		// any block: a paragraph style and number would only get in the way.
+		shade, shaded := boxShade(&bc, &bx)
+		if _, drawn := boxEdges(&bx, shade, shaded); drawn || bx.layout != "" {
+			bc.indent = bc.listBase + 720*level
+			c.block(n, bc, st, bx, blockOpts{})
+			return
+		}
+	}
 	c.enterBlock(&bc, st, bx)
 	bc.indent = bc.listBase + 720*(level+1)
 	bc.paraStyle = model.StyleListParagraph
@@ -1109,7 +1364,11 @@ func (c *conv) listItem(n *html.Node, bc bctx, numID, level int) {
 	c.pendingNum = pn
 	c.maybeBookmark(n, false)
 	c.generated(n, &bc, css.Before)
-	c.children(n, bc)
+	if bx.layout != "" {
+		c.layoutChildren(n, bc, bx)
+	} else {
+		c.children(n, bc)
+	}
 	c.generated(n, &bc, css.After)
 	c.flushPara()
 	if c.pendingNum == pn {

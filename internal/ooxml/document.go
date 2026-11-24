@@ -86,9 +86,15 @@ func (d *docWriter) blocks(blocks []model.Block, inCell bool) {
 			prevTable = true
 		}
 	}
-	// A cell must contain a paragraph, and must end with one.
-	if inCell && (len(blocks) == 0 || prevTable) {
+	// A cell must contain a paragraph, and must end with one. After a
+	// table the paragraph is only there for that rule, so it is kept to a
+	// point high instead of adding a blank line to the cell.
+	switch {
+	case inCell && len(blocks) == 0:
 		d.b.s(`<w:p/>`)
+	case inCell && prevTable:
+		d.b.s(`<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/>`,
+			`<w:rPr><w:sz w:val="2"/><w:szCs w:val="2"/></w:rPr></w:pPr></w:p>`)
 	}
 }
 
@@ -480,6 +486,16 @@ func (d *docWriter) table(t *model.Table) {
 		b.s(`" w:type="dxa"/>`)
 	}
 	b.borders("tblBorders", t.Borders)
+	if t.Fixed {
+		b.s(`<w:tblLayout w:type="fixed"/>`)
+	}
+	if m := t.CellMargin; m > 0 {
+		b.s(`<w:tblCellMar><w:left w:w="`)
+		b.i(m)
+		b.s(`" w:type="dxa"/><w:right w:w="`)
+		b.i(m)
+		b.s(`" w:type="dxa"/></w:tblCellMar>`)
+	}
 	b.s(`</w:tblPr><w:tblGrid>`)
 	for _, w := range t.Cols {
 		b.s(`<w:gridCol w:w="`)
@@ -517,6 +533,15 @@ func (d *docWriter) table(t *model.Table) {
 			b.borders("tcBorders", cell.Borders)
 			if cell.Shade != "" {
 				b.s(`<w:shd w:val="clear" w:color="auto" w:fill="`, cell.Shade, `"/>`)
+			}
+			if m := cell.Margins; m != nil {
+				b.s(`<w:tcMar>`)
+				for i, name := range sideNames {
+					b.s(`<w:`, name, ` w:w="`)
+					b.i(m[i])
+					b.s(`" w:type="dxa"/>`)
+				}
+				b.s(`</w:tcMar>`)
 			}
 			if cell.VAlign != "" {
 				b.s(`<w:vAlign w:val="`, cell.VAlign, `"/>`)

@@ -189,6 +189,12 @@ type Table struct {
 	Align   string     // "", "center" or "right"
 	Width   int        // twips; 0 means automatic
 	Borders *[4]Border // outer borders set by CSS, or nil
+	// Fixed keeps the column widths as given instead of letting the reader
+	// fit them to the content.
+	Fixed bool
+	// CellMargin is the left and the right margin of every cell, in twips;
+	// 0 means the table style's.
+	CellMargin int
 }
 
 // Row is a table row.
@@ -213,6 +219,7 @@ type Cell struct {
 	Shade   string // RRGGBB or ""
 	VAlign  string // "", "top", "center" or "bottom"
 	Borders *[4]Border
+	Margins *[4]int // space between the borders and the content, twips; nil for the table's
 }
 
 func (*Paragraph) block()      {}

@@ -75,7 +75,9 @@ func TestPathologicalInputs(t *testing.T) {
 		// Bordered, padded boxes nested deep enough to use up the indent
 		// and the right inset, and long runs of sibling boxes.
 		"boxnest": strings.Repeat(`<div style="border:2px solid #123;padding:30px;background:#eee">p`, 500) + "x" + strings.Repeat("</div>", 500),
-		"boxes":   strings.Repeat(`<div style="border-left:4px solid #0f766e;padding:8px;background:#f0fdfa"><p>a</p><p>b</p></div><li style="border-bottom:1px solid #ddd">c</li>`, 5000),
+		// Small boxes that look like badges, nested, around a large tree.
+		"badgenest": strings.Repeat(`<div style="width:20px;background:#eee">`, 500) + strings.Repeat("<b></b>", 20000) + "x" + strings.Repeat("</div>", 500),
+		"boxes":     strings.Repeat(`<div style="border-left:4px solid #0f766e;padding:8px;background:#f0fdfa"><p>a</p><p>b</p></div><li style="border-bottom:1px solid #ddd">c</li>`, 5000),
 		// counters() on a counter reset at every level of a deep tree, read
 		// by many elements: the generated text is bounded.
 		"counters": "<style>div{counter-reset:c} div::before{counter-increment:c} p::before{content:counters(c, '.') ' '}</style>" +

@@ -17,17 +17,30 @@
 <w:t>Plain text before the boxes.</w:t>
 </w:r>
 </w:p>
-<w:p>
-<w:pPr>
-<w:pBdr>
-<w:top w:val="single" w:sz="2" w:space="9" w:color="F0FDFA"/>
-<w:left w:val="single" w:sz="24" w:space="12" w:color="0F766E"/>
-<w:bottom w:val="single" w:sz="2" w:space="9" w:color="F0FDFA"/>
-<w:right w:val="single" w:sz="2" w:space="12" w:color="F0FDFA"/>
-</w:pBdr>
+<w:tbl>
+<w:tblPr>
+<w:tblW w:w="9026" w:type="dxa"/>
+<w:tblLayout w:type="fixed"/>
+</w:tblPr>
+<w:tblGrid>
+<w:gridCol w:w="9026"/>
+</w:tblGrid>
+<w:tr>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="9026" w:type="dxa"/>
+<w:tcBorders>
+<w:left w:val="single" w:sz="24" w:space="0" w:color="0F766E"/>
+</w:tcBorders>
 <w:shd w:val="clear" w:color="auto" w:fill="F0FDFA"/>
-<w:ind w:left="300" w:right="245"/>
-</w:pPr>
+<w:tcMar>
+<w:top w:w="180" w:type="dxa"/>
+<w:left w:w="240" w:type="dxa"/>
+<w:bottom w:w="180" w:type="dxa"/>
+<w:right w:w="240" w:type="dxa"/>
+</w:tcMar>
+</w:tcPr>
+<w:p>
 <w:r>
 <w:rPr>
 <w:b/>
@@ -40,45 +53,48 @@
 </w:r>
 </w:p>
 <w:p>
-<w:pPr>
-<w:pBdr>
-<w:top w:val="single" w:sz="2" w:space="9" w:color="F0FDFA"/>
-<w:left w:val="single" w:sz="24" w:space="12" w:color="0F766E"/>
-<w:bottom w:val="single" w:sz="2" w:space="9" w:color="F0FDFA"/>
-<w:right w:val="single" w:sz="2" w:space="12" w:color="F0FDFA"/>
-</w:pBdr>
-<w:shd w:val="clear" w:color="auto" w:fill="F0FDFA"/>
-<w:ind w:left="300" w:right="245"/>
-</w:pPr>
 <w:r>
 <w:t>The second paragraph shares the box.</w:t>
 </w:r>
 </w:p>
+</w:tc>
+</w:tr>
+</w:tbl>
+<w:p/>
+<w:tbl>
+<w:tblPr>
+<w:tblW w:w="9026" w:type="dxa"/>
+<w:tblLayout w:type="fixed"/>
+</w:tblPr>
+<w:tblGrid>
+<w:gridCol w:w="9026"/>
+</w:tblGrid>
+<w:tr>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="9026" w:type="dxa"/>
+<w:tcBorders>
+<w:top w:val="single" w:sz="6" w:space="0" w:color="D1D5DB"/>
+<w:left w:val="single" w:sz="6" w:space="0" w:color="D1D5DB"/>
+<w:bottom w:val="single" w:sz="6" w:space="0" w:color="D1D5DB"/>
+<w:right w:val="single" w:sz="6" w:space="0" w:color="D1D5DB"/>
+</w:tcBorders>
+<w:tcMar>
+<w:top w:w="150" w:type="dxa"/>
+<w:left w:w="210" w:type="dxa"/>
+<w:bottom w:w="150" w:type="dxa"/>
+<w:right w:w="210" w:type="dxa"/>
+</w:tcMar>
+</w:tcPr>
 <w:p>
 <w:pPr>
 <w:pStyle w:val="Heading3"/>
-<w:pBdr>
-<w:top w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
-<w:left w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
-<w:bottom w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
-<w:right w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
-</w:pBdr>
-<w:ind w:left="235" w:right="235"/>
 </w:pPr>
 <w:r>
 <w:t>Card title</w:t>
 </w:r>
 </w:p>
 <w:p>
-<w:pPr>
-<w:pBdr>
-<w:top w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
-<w:left w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
-<w:bottom w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
-<w:right w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
-</w:pBdr>
-<w:ind w:left="235" w:right="235"/>
-</w:pPr>
 <w:r>
 <w:t>Card text with a list:</w:t>
 </w:r>
@@ -90,13 +106,6 @@
 <w:ilvl w:val="0"/>
 <w:numId w:val="1"/>
 </w:numPr>
-<w:pBdr>
-<w:top w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
-<w:left w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
-<w:bottom w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
-<w:right w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
-</w:pBdr>
-<w:ind w:left="955" w:right="235" w:hanging="360"/>
 </w:pPr>
 <w:r>
 <w:t>first</w:t>
@@ -109,13 +118,6 @@
 <w:ilvl w:val="0"/>
 <w:numId w:val="1"/>
 </w:numPr>
-<w:pBdr>
-<w:top w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
-<w:left w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
-<w:bottom w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
-<w:right w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
-</w:pBdr>
-<w:ind w:left="955" w:right="235" w:hanging="360"/>
 </w:pPr>
 <w:r>
 <w:t>second</w:t>
@@ -129,22 +131,13 @@
 <w:bottom w:val="dashed" w:sz="12" w:space="3" w:color="B45309"/>
 <w:right w:val="dashed" w:sz="12" w:space="6" w:color="B45309"/>
 </w:pBdr>
-<w:ind w:left="385" w:right="385"/>
+<w:ind w:left="150" w:right="150"/>
 </w:pPr>
 <w:r>
 <w:t>A dashed warning inside the card.</w:t>
 </w:r>
 </w:p>
 <w:p>
-<w:pPr>
-<w:pBdr>
-<w:top w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
-<w:left w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
-<w:bottom w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
-<w:right w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
-</w:pBdr>
-<w:ind w:left="235" w:right="235"/>
-</w:pPr>
 <w:r>
 <w:t>Card text after the warning.</w:t>
 </w:r>
@@ -153,11 +146,10 @@
 <w:tblPr>
 <w:tblStyle w:val="TableGrid"/>
 <w:tblW w:w="0" w:type="auto"/>
-<w:tblInd w:w="235" w:type="dxa"/>
 </w:tblPr>
 <w:tblGrid>
-<w:gridCol w:w="4278"/>
-<w:gridCol w:w="4278"/>
+<w:gridCol w:w="702"/>
+<w:gridCol w:w="927"/>
 </w:tblGrid>
 <w:tr>
 <w:trPr>
@@ -223,14 +215,43 @@
 </w:tbl>
 <w:p>
 <w:pPr>
-<w:pBdr>
-<w:top w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
-<w:left w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
-<w:bottom w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
-<w:right w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
-</w:pBdr>
-<w:ind w:left="235" w:right="235"/>
+<w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/>
+<w:rPr>
+<w:sz w:val="2"/>
+<w:szCs w:val="2"/>
+</w:rPr>
 </w:pPr>
+</w:p>
+</w:tc>
+</w:tr>
+</w:tbl>
+<w:p/>
+<w:tbl>
+<w:tblPr>
+<w:tblW w:w="9026" w:type="dxa"/>
+<w:tblLayout w:type="fixed"/>
+</w:tblPr>
+<w:tblGrid>
+<w:gridCol w:w="9026"/>
+</w:tblGrid>
+<w:tr>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="9026" w:type="dxa"/>
+<w:tcBorders>
+<w:top w:val="single" w:sz="6" w:space="0" w:color="D1D5DB"/>
+<w:left w:val="single" w:sz="6" w:space="0" w:color="D1D5DB"/>
+<w:bottom w:val="single" w:sz="6" w:space="0" w:color="D1D5DB"/>
+<w:right w:val="single" w:sz="6" w:space="0" w:color="D1D5DB"/>
+</w:tcBorders>
+<w:tcMar>
+<w:top w:w="150" w:type="dxa"/>
+<w:left w:w="210" w:type="dxa"/>
+<w:bottom w:w="150" w:type="dxa"/>
+<w:right w:w="210" w:type="dxa"/>
+</w:tcMar>
+</w:tcPr>
+<w:p>
 <w:r>
 <w:rPr>
 <w:b/>
@@ -240,29 +261,40 @@
 </w:r>
 </w:p>
 <w:p>
-<w:pPr>
-<w:pBdr>
-<w:top w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
-<w:left w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
-<w:bottom w:val="single" w:sz="6" w:space="8" w:color="D1D5DB"/>
-<w:right w:val="single" w:sz="6" w:space="11" w:color="D1D5DB"/>
-</w:pBdr>
-<w:ind w:left="235" w:right="235"/>
-</w:pPr>
 <w:r>
 <w:t>Left body.</w:t>
 </w:r>
 </w:p>
+</w:tc>
+</w:tr>
+</w:tbl>
+<w:p/>
+<w:tbl>
+<w:tblPr>
+<w:tblW w:w="9026" w:type="dxa"/>
+<w:tblLayout w:type="fixed"/>
+</w:tblPr>
+<w:tblGrid>
+<w:gridCol w:w="9026"/>
+</w:tblGrid>
+<w:tr>
+<w:tc>
+<w:tcPr>
+<w:tcW w:w="9026" w:type="dxa"/>
+<w:tcBorders>
+<w:top w:val="single" w:sz="6" w:space="0" w:color="D1D5DB"/>
+<w:left w:val="single" w:sz="6" w:space="0" w:color="D1D5DB"/>
+<w:bottom w:val="single" w:sz="6" w:space="0" w:color="D1D5DB"/>
+<w:right w:val="single" w:sz="6" w:space="0" w:color="D1D5DB"/>
+</w:tcBorders>
+<w:tcMar>
+<w:top w:w="150" w:type="dxa"/>
+<w:left w:w="210" w:type="dxa"/>
+<w:bottom w:w="150" w:type="dxa"/>
+<w:right w:w="210" w:type="dxa"/>
+</w:tcMar>
+</w:tcPr>
 <w:p>
-<w:pPr>
-<w:pBdr>
-<w:top w:val="single" w:sz="6" w:space="8" w:color="D1D5DA"/>
-<w:left w:val="single" w:sz="6" w:space="11" w:color="D1D5DA"/>
-<w:bottom w:val="single" w:sz="6" w:space="8" w:color="D1D5DA"/>
-<w:right w:val="single" w:sz="6" w:space="11" w:color="D1D5DA"/>
-</w:pBdr>
-<w:ind w:left="235" w:right="235"/>
-</w:pPr>
 <w:r>
 <w:rPr>
 <w:b/>
@@ -272,19 +304,13 @@
 </w:r>
 </w:p>
 <w:p>
-<w:pPr>
-<w:pBdr>
-<w:top w:val="single" w:sz="6" w:space="8" w:color="D1D5DA"/>
-<w:left w:val="single" w:sz="6" w:space="11" w:color="D1D5DA"/>
-<w:bottom w:val="single" w:sz="6" w:space="8" w:color="D1D5DA"/>
-<w:right w:val="single" w:sz="6" w:space="11" w:color="D1D5DA"/>
-</w:pBdr>
-<w:ind w:left="235" w:right="235"/>
-</w:pPr>
 <w:r>
 <w:t>Right body.</w:t>
 </w:r>
 </w:p>
+</w:tc>
+</w:tr>
+</w:tbl>
 <w:p>
 <w:pPr>
 <w:pStyle w:val="ListParagraph"/>
@@ -354,7 +380,7 @@
 <w:tblW w:w="0" w:type="auto"/>
 </w:tblPr>
 <w:tblGrid>
-<w:gridCol w:w="9026"/>
+<w:gridCol w:w="2744"/>
 </w:tblGrid>
 <w:tr>
 <w:tc>
