@@ -68,25 +68,31 @@ func GradientColor(s string) (Color, bool) {
 	default:
 		return Color{}, false
 	}
-	var r, g, b, a float64
-	n := 0
+	var stops []Color
 	for _, stop := range SplitComma(s[open+1 : len(s)-1]) {
 		for _, t := range Fields(stop) {
-			col, ok := ParseColor(t)
-			if !ok {
-				continue
+			if col, ok := ParseColor(t); ok {
+				stops = append(stops, col)
+				break
 			}
-			r += float64(col.R) * col.A
-			g += float64(col.G) * col.A
-			b += float64(col.B) * col.A
-			a += col.A
-			n++
-			break
 		}
 	}
-	if n == 0 || a == 0 {
+	return Average(stops)
+}
+
+// Average is the mean of colours weighted by their alpha, with the mean
+// alpha. ok is false when there are none or all are transparent.
+func Average(cols []Color) (Color, bool) {
+	var r, g, b, a float64
+	for _, col := range cols {
+		r += float64(col.R) * col.A
+		g += float64(col.G) * col.A
+		b += float64(col.B) * col.A
+		a += col.A
+	}
+	if len(cols) == 0 || a == 0 {
 		return Color{}, false
 	}
 	round := func(v float64) uint8 { return uint8(math.Round(v / a)) }
-	return Color{round(r), round(g), round(b), a / float64(n)}, true
+	return Color{round(r), round(g), round(b), a / float64(len(cols))}, true
 }

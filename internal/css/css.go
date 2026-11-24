@@ -146,25 +146,39 @@ type ruleSel struct {
 	order int
 }
 
-// Stylesheet is a set of style rules, indexed for matching.
-type Stylesheet struct {
+// ruleIndex holds rules by the id, class or tag of their subject, so an
+// element only tests rules that could match it.
+type ruleIndex struct {
 	byID      map[string][]*ruleSel
 	byClass   map[string][]*ruleSel
 	byTag     map[string][]*ruleSel
 	universal []*ruleSel
-	order     int
-	nthCache  map[*html.Node]int
+	n         int
+}
+
+// Stylesheet is a set of style rules, indexed for matching. Rules for the
+// element itself, its ::before and its ::after are kept apart.
+type Stylesheet struct {
+	idx      [3]ruleIndex // by pseudo-element: none, Before, After
+	order    int
+	nthCache map[*html.Node]int
 }
 
 // NewStylesheet returns an empty stylesheet.
 func NewStylesheet() *Stylesheet {
-	return &Stylesheet{
-		byID:     map[string][]*ruleSel{},
-		byClass:  map[string][]*ruleSel{},
-		byTag:    map[string][]*ruleSel{},
-		nthCache: map[*html.Node]int{},
+	s := &Stylesheet{nthCache: map[*html.Node]int{}}
+	for i := range s.idx {
+		s.idx[i] = ruleIndex{
+			byID:    map[string][]*ruleSel{},
+			byClass: map[string][]*ruleSel{},
+			byTag:   map[string][]*ruleSel{},
+		}
 	}
+	return s
 }
+
+// HasPseudo reports whether any rule selects the given pseudo-element.
+func (s *Stylesheet) HasPseudo(pe int) bool { return s.idx[pe].n > 0 }
 
 // Len returns the number of selector/rule pairs in the sheet.
 func (s *Stylesheet) Len() int { return s.order }
@@ -224,15 +238,17 @@ func (s *Stylesheet) parse(t string, depth int) {
 			s.order++
 			rs := &ruleSel{sel, decls, s.order}
 			last := &sel.parts[len(sel.parts)-1]
+			ix := &s.idx[sel.pseudoEl]
+			ix.n++
 			switch {
 			case last.id != "":
-				s.byID[last.id] = append(s.byID[last.id], rs)
+				ix.byID[last.id] = append(ix.byID[last.id], rs)
 			case len(last.classes) > 0:
-				s.byClass[last.classes[0]] = append(s.byClass[last.classes[0]], rs)
+				ix.byClass[last.classes[0]] = append(ix.byClass[last.classes[0]], rs)
 			case last.tag != "":
-				s.byTag[last.tag] = append(s.byTag[last.tag], rs)
+				ix.byTag[last.tag] = append(ix.byTag[last.tag], rs)
 			default:
-				s.universal = append(s.universal, rs)
+				ix.universal = append(ix.universal, rs)
 			}
 		}
 	}
@@ -265,7 +281,16 @@ type Matched struct {
 // Match appends to buf the rules that match n, from least to most specific,
 // and returns the extended slice.
 func (s *Stylesheet) Match(n *html.Node, buf []Matched) []Matched {
-	if s.order == 0 {
+	return s.match0(n, &s.idx[0], buf)
+}
+
+// MatchPseudo is Match for n's ::before (Before) or ::after (After).
+func (s *Stylesheet) MatchPseudo(n *html.Node, pe int, buf []Matched) []Matched {
+	return s.match0(n, &s.idx[pe], buf)
+}
+
+func (s *Stylesheet) match0(n *html.Node, ix *ruleIndex, buf []Matched) []Matched {
+	if ix.n == 0 {
 		return buf
 	}
 	base := len(buf)
@@ -283,17 +308,17 @@ func (s *Stylesheet) Match(n *html.Node, buf []Matched) []Matched {
 		}
 		switch a.Key {
 		case "id":
-			if len(s.byID) > 0 {
-				try(s.byID[a.Val])
+			if len(ix.byID) > 0 {
+				try(ix.byID[a.Val])
 			}
 		case "class":
-			if len(s.byClass) > 0 {
-				eachClass(a.Val, func(c string) { try(s.byClass[c]) })
+			if len(ix.byClass) > 0 {
+				eachClass(a.Val, func(c string) { try(ix.byClass[c]) })
 			}
 		}
 	}
-	try(s.byTag[n.Data])
-	try(s.universal)
+	try(ix.byTag[n.Data])
+	try(ix.universal)
 	if len(buf)-base > 1 {
 		slices.SortFunc(buf[base:], func(a, b Matched) int {
 			if a.spec != b.spec {

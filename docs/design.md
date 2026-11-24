@@ -7,7 +7,7 @@ This file records how htmltodocx is built and why. It doubles as the record that
 1. **Sources are the specifications:** ECMA-376 (Office Open XML), the WHATWG HTML Standard, the CSS specifications.
 2. **Nothing other tools write is committed.** Files produced by other converters or word processors live only in the git-ignored `oracle/` folder.
 3. **Test inputs are our own.** Everything in `testdata/` was written for this project. Golden files are produced by this library.
-4. **Dependencies must be permissively licensed.** Today that is only `golang.org/x/net` and `golang.org/x/text` (BSD-3-Clause).
+4. **Dependencies must be permissively licensed.** Today that is only `golang.org/x/net`, `golang.org/x/text`, `golang.org/x/image` and, through it on amd64, `golang.org/x/sys/cpu` (all BSD-3-Clause, from the Go project).
 5. **The default stylesheet is ours.** `internal/ooxml/package.go` builds `styles.xml` and `numbering.xml` from the specification. Style *names* such as "heading 1" and "Table Grid" are Word's standard built-in names, used so that Word's navigation pane, style gallery and table of contents recognise them. Their definitions are our own.
 
 ## Pipeline
@@ -67,6 +67,26 @@ A block with a border, or with a background and padding, becomes paragraph borde
 - **Not attempted:** borders on `html`, `body` and inline elements; percentage padding; vertical padding on a side that draws nothing.
 
 Limitation: a box whose content has different indents, such as a list or a nested box, is drawn by Word as several boxes stacked, since Word only joins paragraphs whose indents match. A table also splits a box, and is not inside its border. A single-cell table would hold any content, but it would turn every bordered section of a document, and often the whole page wrapper, into a table, which is worse to edit and to break across pages.
+
+### Generated content
+
+`::before` and `::after` (and the older one-colon forms) are supported because models use them for text the reader sees: checkbox and arrow bullets, "Note:" labels, and clause numbers built from counters. The engine keeps rules for each pseudo-element in their own index (`internal/css/css.go`), so an ordinary element never tests them. A pseudo-element inherits from its element, gets its own declarations through the same cascade, and its text is added at the start or end of the element's content with its own run formatting (`internal/dom/generated.go`).
+
+- **Content:** strings with CSS escapes, `counter()`, `counters()`, `attr()`, `open-quote` and `close-quote`. `url()` images are skipped with a warning. Empty content draws nothing, which covers the many decorative bars and dots built from `content: ""` with a background or border.
+- **Counters** follow CSS scoping: a reset applies to the element, its following siblings and their descendants; a reset on a sibling replaces the sibling's counter; using a counter that is not in scope creates one. Reset, increment and set run in that order. Elements that are not displayed do not count. Counter styles are decimal, decimal-leading-zero, the latin, alpha and roman styles, disc, circle, square and none.
+- **Display:** a `display: block` pseudo-element is its own paragraph; any other is inline. One that is absolutely positioned (a marker placed in the padding) is kept a space apart from the text, since in a browser it does not touch it.
+- **Not supported:** pseudo-elements on lists and table cells, the built-in `list-item` counter, and `::marker`, `::first-line` and `::first-letter`.
+- **Bounds:** generated text is limited to 4 MB per conversion, since `counters()` on a deeply nested counter read by many elements is quadratic. Counter lookups only check the innermost instance, because instances are pushed in document order and each scope lies inside the one below it.
+
+### SVG
+
+Inline `<svg>` and SVG files in `<img>` become pictures with two parts: the drawing itself, attached through the `svgBlip` extension that Word 2016 introduced, and a PNG rendering that the picture names as its image. Word shows the SVG, sharp at any size; readers that do not know the extension show the PNG. This is the only way DOCX carries SVG, and how Word itself saves it. The code is in `internal/svg`, and `internal/dom/svg.go` connects it.
+
+- **The embedded copy is rebuilt, not passed through** (`internal/svg/encode.go`). SVG is a document format with scripts, event handlers, external images and stylesheets. The copy keeps an allowlist of drawing elements and presentation attributes, links only to ids inside the drawing (`url(#id)`, `href="#id"`), and folds CSS that the page applied to the drawing into attributes. `<a>` becomes `<g>`. Attributes are written in name order so output stays reproducible.
+- **The PNG is drawn by a small renderer** on `golang.org/x/image/vector`: paths (all commands, arcs included), basic shapes, `<use>` and `<symbol>`, transforms, viewBox and `preserveAspectRatio`, fill and stroke colours, opacity and `currentColor`. Fills use the nonzero rule. Strokes are built as quads and round joins wound the same way, so a translucent stroke is painted once where pieces overlap. Gradients become the average of their stops, as backgrounds do. Not drawn: text (it needs fonts), clip paths, masks, filters, patterns, markers and dashes. The PNG is twice the CSS size, at most 1024 pixels a side.
+- **Size** comes from CSS, then the `width` and `height` attributes, then the viewBox, then the browser default of 300×150. `currentColor` is the text colour around an inline drawing; an SVG file in `<img>` does not inherit it, as in a browser.
+- **Alt text** is the drawing's `<title>` or `aria-label`; `aria-hidden="true"` makes it decorative. Drawings with nothing to draw, such as sprite sheets of `<symbol>`s with zero size, are skipped silently.
+- **Bounds:** 20,000 nodes and 128 levels per drawing, 200,000 points after flattening, 50,000 elements drawn counting `<use>` again, `<use>` nested 8 deep, 64 megapixels of fill work per drawing, and 32 megapixels of PNG per conversion. Past the last, drawings get a one-pixel PNG with a warning; Word still shows the SVG.
 
 ### Flex and grid
 
@@ -148,4 +168,4 @@ Opening the files in Microsoft Word, Google Docs and LibreOffice. Schema validit
 ## Roadmap
 
 - **v0.2:** footnotes, syntax highlighting, reference `.docx` (styles, numbering, headers and footers from a user's file), cell padding, table of contents field, `@page` size and margins.
-- **Later:** SVG with a raster fallback, MathML to OMML, tracked changes from `<ins>`/`<del>`, an HTTP resource loader with limits.
+- **Later:** text in the SVG fallback rendering, MathML to OMML, tracked changes from `<ins>`/`<del>`, an HTTP resource loader with limits.

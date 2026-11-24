@@ -6,10 +6,13 @@ import (
 	"context"
 	"encoding/xml"
 	"flag"
+	"image/png"
 	"io"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -819,6 +822,120 @@ func TestBoxes(t *testing.T) {
 	}
 }
 
+// ::before and ::after content is text the reader sees: labels, bullets,
+// checkboxes and numbering built from CSS counters.
+func TestGeneratedContent(t *testing.T) {
+	tests := []struct {
+		name     string
+		html     string
+		paras    []string
+		want     []string // in document.xml, in order
+		wantNot  []string
+		wantWarn string
+	}{
+		{
+			name:  "label before, styled as the pseudo-element",
+			html:  `<style>.note::before{content:"Note: ";font-weight:bold}</style><p class="note">Read this.</p>`,
+			paras: []string{"Note: Read this."},
+			want:  []string{`<w:b/>`, `Note: `, `</w:r>`, `Read this.`},
+		},
+		{
+			name:  "after, with the older one-colon syntax",
+			html:  `<style>p:after{content:" \2713"}</style><p>Done</p>`,
+			paras: []string{"Done ✓"},
+		},
+		{
+			name:  "checkbox bullets on a list without markers",
+			html:  `<style>ul.c{list-style:none} ul.c li::before{content:"\2610\00a0"}</style><ul class="c"><li>Buy</li><li>Sell</li></ul>`,
+			paras: []string{"☐ Buy", "☐ Sell"},
+		},
+		{
+			name: "nested numbering with counters()",
+			html: `<style>ol.cl, ol.cl ol{list-style:none;counter-reset:item} ol.cl li::before{counter-increment:item;content:counters(item,".") " "}</style>` +
+				`<ol class="cl"><li>A<ol><li>A1</li><li>A2</li></ol></li><li>B</li></ol>`,
+			paras: []string{"1 A", "1.1 A1", "1.2 A2", "2 B"},
+		},
+		{
+			// A counter used without a reset is created on the first element
+			// and its scope takes in the following siblings.
+			name:  "section numbers in roman numerals",
+			html:  `<style>h2{counter-increment:sec} h2::before{content:counter(sec, upper-roman) ". "}</style><h2>Intro</h2><p>x</p><h2 style="display:none">Hidden</h2><h2>Scope</h2>`,
+			paras: []string{"I. Intro", "x", "II. Scope"},
+		},
+		{
+			name:  "a reset on a sibling starts a new count",
+			html:  `<style>ol{counter-reset:n;list-style:none} li::before{counter-increment:n;content:counter(n) ") "}</style><ol><li>a</li><li>b</li></ol><ol><li>c</li></ol>`,
+			paras: []string{"1) a", "2) b", "1) c"},
+		},
+		{
+			name:  "attribute values",
+			html:  `<style>abbr::after{content:" (" attr(title) ")"}</style><p><abbr title="Application Programming Interface">API</abbr></p>`,
+			paras: []string{"API (Application Programming Interface)"},
+		},
+		{
+			name:  "quotes",
+			html:  `<style>.q::before{content:open-quote} .q::after{content:close-quote}</style><p class="q">Hi</p>`,
+			paras: []string{"“Hi”"},
+		},
+		{
+			name:  "a positioned marker is kept apart from the text",
+			html:  `<style>li::before{content:"▸";position:absolute;left:0} p::after{content:"*";position:absolute}</style><ul style="list-style:none"><li>Led</li></ul><p>Note</p>`,
+			paras: []string{"▸ Led", "Note *"},
+		},
+		{
+			name:  "a block pseudo-element is its own paragraph",
+			html:  `<style>.card::before{content:"Header";display:block;font-weight:bold}</style><div class="card">Body</div>`,
+			paras: []string{"Header", "Body"},
+		},
+		{
+			name:  "decorations with empty content add nothing",
+			html:  `<style>p::before{content:"";position:absolute;width:4px;background:red} p::after{color:red}</style><p>x</p>`,
+			paras: []string{"x"},
+		},
+		{
+			name:  "badge background",
+			html:  `<style>.new::before{content:"NEW";background:#fde68a} </style><p class="new"> item</p>`,
+			paras: []string{"NEW item"},
+			want:  []string{`w:fill="FDE68A"`, `NEW`},
+		},
+		{
+			name:     "images in content are reported",
+			html:     `<style>p::before{content:url(icon.png) "x "}</style><p>y</p>`,
+			paras:    []string{"x y"},
+			wantWarn: "generated content",
+		},
+		{
+			name:  "inline styles have no pseudo-elements",
+			html:  `<p style="content:'no'">x</p>`,
+			paras: []string{"x"},
+		},
+	}
+	for _, tt := range tests {
+		var warnings []string
+		parts := convert(t, tt.html, &Options{Warn: func(w Warning) { warnings = append(warnings, w.String()) }})
+		if got := paragraphs(t, tt.html); !reflect.DeepEqual(got, tt.paras) {
+			t.Errorf("%s: paragraphs %q, want %q", tt.name, got, tt.paras)
+		}
+		doc := string(parts["word/document.xml"])
+		pos := 0
+		for _, w := range tt.want {
+			i := strings.Index(doc[pos:], w)
+			if i < 0 {
+				t.Errorf("%s: missing %s (in order) in\n%s", tt.name, w, doc)
+				break
+			}
+			pos += i + len(w)
+		}
+		all := strings.Join(warnings, "\n")
+		if tt.wantWarn != "" && !strings.Contains(all, tt.wantWarn) {
+			t.Errorf("%s: no warning mentioning %q; got %q", tt.name, tt.wantWarn, warnings)
+		}
+		if tt.wantWarn == "" && len(warnings) > 0 {
+			t.Errorf("%s: unexpected warnings %q", tt.name, warnings)
+		}
+	}
+}
+
 // Nested boxes indent their content, but never squeeze it below an inch.
 func TestNestedBoxesKeepTextWidth(t *testing.T) {
 	html := strings.Repeat(`<div style="border:2px solid #000;padding:30px">p`, 60) + strings.Repeat("</div>", 60)
@@ -1015,10 +1132,93 @@ func TestWarnings(t *testing.T) {
 	var got []string
 	opts := &Options{Warn: func(w Warning) { got = append(got, w.Code) }}
 	convert(t, `<img src="a.png"><img src="a.png"><svg></svg><math><mi>x</mi></math><ol reversed><li>a</li></ol>`, opts)
-	want := "image,svg,math,list"
+	want := "image,math,list"
 	if strings.Join(got, ",") != want {
 		t.Errorf("got %v, want %s", got, want)
 	}
+}
+
+// mediaParts returns the media parts of a package by extension.
+func mediaParts(parts map[string][]byte) map[string][][]byte {
+	out := map[string][][]byte{}
+	for name, data := range parts {
+		if strings.HasPrefix(name, "word/media/") {
+			ext := name[strings.LastIndexByte(name, '.')+1:]
+			out[ext] = append(out[ext], data)
+		}
+	}
+	return out
+}
+
+// Inline SVG and SVG files become pictures: a PNG rendering that every
+// reader shows, and the drawing itself for readers that support SVG.
+func TestSVG(t *testing.T) {
+	t.Run("inline drawing", func(t *testing.T) {
+		html := `<p style="color:#ff0000">Logo <svg width="24" height="12" viewBox="0 0 2 1" onload="alert(1)"><title>Brand mark</title>` +
+			`<script>alert(1)</script><rect width="2" height="1" fill="currentColor"/></svg></p>`
+		parts := convert(t, html, nil)
+		checkPackage(t, parts)
+		doc := string(parts["word/document.xml"])
+		for _, want := range []string{
+			`<wp:extent cx="228600" cy="114300"/>`, `descr="Brand mark"`,
+			`"><a:extLst><a:ext uri="{96DAC541-7B7A-43D3-8B79-37D633B846F1}">`,
+			`<asvg:svgBlip xmlns:asvg="http://schemas.microsoft.com/office/drawing/2016/SVG/main" r:embed="rId`,
+		} {
+			if !strings.Contains(doc, want) {
+				t.Errorf("missing %s in\n%s", want, doc)
+			}
+		}
+		media := mediaParts(parts)
+		if len(media["png"]) != 1 || len(media["svg"]) != 1 {
+			t.Fatalf("media = %v parts, want one png and one svg", len(media))
+		}
+		drawing := string(media["svg"][0])
+		if !strings.Contains(drawing, `color="#FF0000"`) || strings.Contains(drawing, "alert") {
+			t.Errorf("embedded svg: %s", drawing)
+		}
+		img, err := png.Decode(bytes.NewReader(media["png"][0]))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if b := img.Bounds(); b.Dx() != 48 || b.Dy() != 24 {
+			t.Errorf("fallback is %v, want 48x24 (twice the CSS size)", b)
+		}
+		if r, g, _, a := img.At(24, 12).RGBA(); r>>8 != 255 || g != 0 || a>>8 != 255 {
+			t.Errorf("fallback pixel is not the text colour: %d %d %d", r>>8, g>>8, a>>8)
+		}
+		if !strings.Contains(string(parts["[Content_Types].xml"]), `<Default Extension="svg" ContentType="image/svg+xml"/>`) {
+			t.Error("svg content type not declared")
+		}
+	})
+	t.Run("sized by CSS, decorative", func(t *testing.T) {
+		html := `<style>.spark{width:68px;height:24px}</style><svg class="spark" viewBox="0 0 34 12" fill="none" aria-hidden="true"><title>x</title>` +
+			`<polyline points="1,10 33,2" stroke="#2563eb"/></svg>`
+		doc := body(t, html, nil)
+		if !strings.Contains(doc, `<wp:extent cx="647700" cy="228600"/>`) || !strings.Contains(doc, `descr=""`) {
+			t.Errorf("got %s", doc)
+		}
+	})
+	t.Run("svg file in img", func(t *testing.T) {
+		src := "data:image/svg+xml," + url.PathEscape(`<svg xmlns="http://www.w3.org/2000/svg" width="10" height="20"><circle cx="5" cy="5" r="4"/></svg>`)
+		parts := convert(t, `<img src="`+src+`" alt="dot">`, nil)
+		doc := string(parts["word/document.xml"])
+		if !strings.Contains(doc, `<wp:extent cx="95250" cy="190500"/>`) || !strings.Contains(doc, "svgBlip") || !strings.Contains(doc, `descr="dot"`) {
+			t.Errorf("got %s", doc)
+		}
+	})
+	t.Run("identical drawings are stored once", func(t *testing.T) {
+		icon := `<svg width="8" height="8"><rect width="8" height="8"/></svg>`
+		media := mediaParts(convert(t, "<p>"+icon+icon+icon+"</p>", nil))
+		if len(media["png"]) != 1 || len(media["svg"]) != 1 {
+			t.Errorf("media: %d png, %d svg; want 1 each", len(media["png"]), len(media["svg"]))
+		}
+	})
+	t.Run("sprite sheets and hidden drawings are skipped", func(t *testing.T) {
+		html := `<svg width="0" height="0"><symbol id="i"><path d="M0 0h1"/></symbol></svg><svg style="display:none"><rect width="1" height="1"/></svg><p>x</p>`
+		if doc := body(t, html, nil); strings.Contains(doc, "<w:drawing>") {
+			t.Errorf("got %s", doc)
+		}
+	})
 }
 
 func TestResourceLoader(t *testing.T) {

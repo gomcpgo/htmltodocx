@@ -74,8 +74,26 @@ func TestPathologicalInputs(t *testing.T) {
 		"flexnest": strings.Repeat(`<div style="display:flex">`, 400) + "x" + strings.Repeat("</div>", 400),
 		// Bordered, padded boxes nested deep enough to use up the indent
 		// and the right inset, and long runs of sibling boxes.
-		"boxnest":   strings.Repeat(`<div style="border:2px solid #123;padding:30px;background:#eee">p`, 500) + "x" + strings.Repeat("</div>", 500),
-		"boxes":     strings.Repeat(`<div style="border-left:4px solid #0f766e;padding:8px;background:#f0fdfa"><p>a</p><p>b</p></div><li style="border-bottom:1px solid #ddd">c</li>`, 5000),
+		"boxnest": strings.Repeat(`<div style="border:2px solid #123;padding:30px;background:#eee">p`, 500) + "x" + strings.Repeat("</div>", 500),
+		"boxes":   strings.Repeat(`<div style="border-left:4px solid #0f766e;padding:8px;background:#f0fdfa"><p>a</p><p>b</p></div><li style="border-bottom:1px solid #ddd">c</li>`, 5000),
+		// counters() on a counter reset at every level of a deep tree, read
+		// by many elements: the generated text is bounded.
+		"counters": "<style>div{counter-reset:c} div::before{counter-increment:c} p::before{content:counters(c, '.') ' '}</style>" +
+			strings.Repeat("<div>", 500) + strings.Repeat("<p>x</p>", 20000),
+		// Generated content on every element, and counter operations on
+		// elements in a deep tree.
+		"pseudos": "<style>*::before{content:'[' counter(n) ']';counter-increment:n} *::after{content:attr(class)} b{counter-reset:n m k}</style>" +
+			strings.Repeat("<i class=x><b>", 240) + strings.Repeat("<span>a</span>", 20000),
+		// Many large drawings: the render budget keeps the fallbacks bounded.
+		"bigsvgs": strings.Repeat(`<svg width="5000" height="5000" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5"/><path d="M0 0`+strings.Repeat(" L10 10 L0 10", 50)+`" stroke="red"/></svg>`, 300),
+		// Many small, different icons, and a drawing with too many nodes.
+		"icons": func() string {
+			var b strings.Builder
+			for i := 0; i < 3000; i++ {
+				fmt.Fprintf(&b, `<svg width="16" height="16" viewBox="0 0 16 16"><path d="M%d 0L16 16H0Z"/></svg>`, i%16)
+			}
+			return b.String()
+		}() + "<svg>" + strings.Repeat("<rect width='1' height='1'/>", 30000) + "</svg>",
 		"selectors": "<style>" + strings.Repeat("a", 10000) + strings.Repeat(" > b", 5000) + "{color:red}" + strings.Repeat("p,", 20000) + "p{color:red}</style><p>x",
 	}
 	for name, html := range cases {

@@ -13,14 +13,24 @@ type Selector struct {
 	parts []compound
 	combs []byte // combs[i] joins parts[i] and parts[i+1]: ' ', '>', '+' or '~'
 	spec  uint32
+	// pseudoEl is Before or After for a selector of a pseudo-element, which
+	// matches the generated box rather than the element itself.
+	pseudoEl int
 }
 
+// Pseudo-elements that rules can select.
+const (
+	Before = 1
+	After  = 2
+)
+
 type compound struct {
-	tag     string // "" matches any element
-	id      string
-	classes []string
-	attrs   []attrSel
-	pseudos []pseudo
+	tag      string // "" matches any element
+	id       string
+	classes  []string
+	attrs    []attrSel
+	pseudos  []pseudo
+	pseudoEl int
 }
 
 type attrSel struct {
@@ -88,6 +98,15 @@ func parseSelector(s string) (*Selector, bool) {
 		}
 		sel.parts = append(sel.parts, c)
 		sel.spec += c.specificity()
+		if c.pseudoEl != 0 {
+			// A pseudo-element ends the selector.
+			p.skipSpace()
+			if p.i < len(p.s) {
+				return nil, false
+			}
+			sel.pseudoEl = c.pseudoEl
+			sel.spec++
+		}
 	}
 	if len(sel.parts) == 0 || len(sel.combs) != len(sel.parts)-1 {
 		return nil, false
@@ -174,6 +193,17 @@ func (p *selParser) compound() (compound, bool) {
 			}
 			c.attrs = append(c.attrs, a)
 		case ch == ':':
+			if pe, ok := p.pseudoElement(); ok {
+				if pe == 0 {
+					return c, false
+				}
+				c.pseudoEl = pe
+				// Nothing may follow a pseudo-element in a compound.
+				if p.i < len(p.s) && !isSpace(p.s[p.i]) {
+					return c, false
+				}
+				return c, true
+			}
 			ps, ok := p.pseudo()
 			if !ok {
 				return c, false
@@ -227,6 +257,32 @@ func (p *selParser) attr() (attrSel, bool) {
 	return a, a.name != ""
 }
 
+// pseudoElement parses "::before" and "::after", and the older one-colon
+// forms. ok is false when the text is not a pseudo-element; pe is 0 for one
+// that is not supported, such as ::marker.
+func (p *selParser) pseudoElement() (pe int, ok bool) {
+	start := p.i
+	p.i++ // ':'
+	double := p.i < len(p.s) && p.s[p.i] == ':'
+	if double {
+		p.i++
+	}
+	name := strings.ToLower(p.ident())
+	if p.i < len(p.s) && p.s[p.i] == '(' {
+		name = ""
+	}
+	switch {
+	case name == "before":
+		return Before, true
+	case name == "after":
+		return After, true
+	case double:
+		return 0, true
+	}
+	p.i = start
+	return 0, false
+}
+
 func (p *selParser) pseudo() (pseudo, bool) {
 	var ps pseudo
 	p.i++ // ':'
@@ -270,7 +326,7 @@ func (p *selParser) pseudo() (pseudo, bool) {
 		ps.kind = psNot
 		inner := &selParser{s: arg}
 		c, ok := inner.compound()
-		if !ok || inner.i != len(arg) {
+		if !ok || inner.i != len(arg) || c.pseudoEl != 0 {
 			return ps, false
 		}
 		ps.not = &c

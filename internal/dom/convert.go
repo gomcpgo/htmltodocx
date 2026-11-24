@@ -131,9 +131,14 @@ type conv struct {
 	images     map[string]*imageEntry
 	imageData  map[[32]byte]*model.ImageData
 	warned     map[string]bool
-	base       *url.URL
-	elements   int
-	stopped    bool
+	counters   map[string][]counter // CSS counters by name, outermost first
+	quoteDepth int
+	// generatedBytes counts text produced by ::before and ::after.
+	generatedBytes int
+	rasterPixels   int // pixels rendered for SVG fallback images
+	base           *url.URL
+	elements       int
+	stopped        bool
 }
 
 // Convert builds the document model for the HTML tree under root.
@@ -406,6 +411,9 @@ func (c *conv) element(n *html.Node, bc bctx) {
 	if bx.display == "none" {
 		return
 	}
+	if bx.hasCounters() {
+		c.applyCounters(n, n.Parent, &bx)
+	}
 
 	switch tag {
 	case "br":
@@ -492,7 +500,9 @@ func (c *conv) generic(n *html.Node, bc bctx, st style, bx box, quote bool) {
 	if quote {
 		c.text("“", &bc)
 	}
+	c.generated(n, &bc, css.Before)
 	c.children(n, bc)
+	c.generated(n, &bc, css.After)
 	if quote {
 		c.text("”", &bc)
 	}
@@ -615,6 +625,7 @@ func (c *conv) block(n *html.Node, bc bctx, st style, bx box, o blockOpts) {
 	}
 	c.maybeBookmark(n, o.bookmark)
 
+	c.generated(n, &bc, css.Before)
 	switch {
 	case o.pre && st.ws == wsPre:
 		c.preformatted(n, bc)
@@ -623,6 +634,7 @@ func (c *conv) block(n *html.Node, bc bctx, st style, bx box, o blockOpts) {
 	default:
 		c.children(n, bc)
 	}
+	c.generated(n, &bc, css.After)
 	c.flushPara()
 	if bx.breakAfter {
 		c.pendingBreak = true
@@ -657,7 +669,7 @@ func (c *conv) preformatted(n *html.Node, bc bctx) {
 func (c *conv) foreign(n *html.Node, bc bctx) {
 	switch n.Data {
 	case "svg":
-		c.warn("svg", "inline SVG is not supported and was skipped")
+		c.inlineSVG(n, bc)
 	case "math":
 		c.warn("math", "MathML is not supported; only its text was kept")
 		c.text(strings.Join(strings.Fields(textContent(n)), " "), &bc)
@@ -1085,6 +1097,9 @@ func (c *conv) listItem(n *html.Node, bc bctx, numID, level int) {
 		return
 	}
 	c.flushPara()
+	if bx.hasCounters() {
+		c.applyCounters(n, n.Parent, &bx)
+	}
 	bc.depth++
 	bx.marginLeft = 0
 	c.enterBlock(&bc, st, bx)
@@ -1093,7 +1108,9 @@ func (c *conv) listItem(n *html.Node, bc bctx, numID, level int) {
 	pn := &pendingNum{id: numID, level: level, explicit: bc.listBase != 0}
 	c.pendingNum = pn
 	c.maybeBookmark(n, false)
+	c.generated(n, &bc, css.Before)
 	c.children(n, bc)
+	c.generated(n, &bc, css.After)
 	c.flushPara()
 	if c.pendingNum == pn {
 		c.forcePendingNum(&bc)

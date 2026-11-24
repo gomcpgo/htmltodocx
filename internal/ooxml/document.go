@@ -373,16 +373,31 @@ func (d *docWriter) runText(s string) {
 	}
 }
 
+// mediaFor returns the media part for an image, adding it on first use.
+func (d *docWriter) mediaFor(data *model.ImageData) *media {
+	m := d.mediaByID[data]
+	if m == nil {
+		m = &media{data: data, name: "image" + strconv.Itoa(len(d.media)+1) + "." + data.Ext}
+		m.rid = d.addRel(relImage, "media/"+m.name, false)
+		d.media = append(d.media, m)
+		d.mediaByID[data] = m
+	}
+	return m
+}
+
+// svgBlipExt is the extension, from Office 2016, that attaches an SVG part to
+// a picture. Readers that do not know it show the PNG the picture names.
+const svgBlipExt = `<a:extLst><a:ext uri="{96DAC541-7B7A-43D3-8B79-37D633B846F1}">` +
+	`<asvg:svgBlip xmlns:asvg="http://schemas.microsoft.com/office/drawing/2016/SVG/main" r:embed="`
+
 func (d *docWriter) image(img *model.Image) {
 	if img.Data == nil {
 		return
 	}
-	m := d.mediaByID[img.Data]
-	if m == nil {
-		m = &media{data: img.Data, name: "image" + strconv.Itoa(len(d.media)+1) + "." + img.Data.Ext}
-		m.rid = d.addRel(relImage, "media/"+m.name, false)
-		d.media = append(d.media, m)
-		d.mediaByID[img.Data] = m
+	m := d.mediaFor(img.Data)
+	var svgRID string
+	if img.SVG != nil {
+		svgRID = d.mediaFor(img.SVG).rid
 	}
 	d.drawings++
 	b := &d.b
@@ -399,8 +414,13 @@ func (d *docWriter) image(img *model.Image) {
 	b.s(`"/><wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>`,
 		`<a:graphic><a:graphicData uri="`, nsPic, `"><pic:pic><pic:nvPicPr><pic:cNvPr id="`)
 	b.i(d.drawings)
-	b.s(`" name="`, m.name, `"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="`, m.rid,
-		`"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="`)
+	b.s(`" name="`, m.name, `"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="`, m.rid)
+	if svgRID != "" {
+		b.s(`">`, svgBlipExt, svgRID, `"/></a:ext></a:extLst></a:blip>`)
+	} else {
+		b.s(`"/>`)
+	}
+	b.s(`<a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="`)
 	b.i64(img.Width)
 	b.s(`" cy="`)
 	b.i64(img.Height)

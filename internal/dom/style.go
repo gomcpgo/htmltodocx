@@ -101,6 +101,19 @@ type box struct {
 	bHasWid [4]bool
 
 	pad [4]float64 // padding in points, by side
+
+	// Generated content and counters. content is only used on ::before
+	// and ::after.
+	content          string
+	hasContent       bool
+	absolute         bool // position: absolute or fixed
+	counterReset     []css.CounterOp
+	counterIncrement []css.CounterOp
+	counterSet       []css.CounterOp
+}
+
+func (b *box) hasCounters() bool {
+	return b.counterReset != nil || b.counterIncrement != nil || b.counterSet != nil
 }
 
 // border returns the resolved border of one side.
@@ -317,6 +330,28 @@ func (c *conv) computeStyle(n *html.Node, parent *style) (style, box) {
 	if c.sheet != nil {
 		c.matchBuf = c.sheet.Match(n, c.matchBuf)
 	}
+	c.applyAuthorStyles(&st, &bx, parent, inline)
+
+	page := tag == "html" || tag == "body"
+	if page {
+		// The page's background, margins, borders and padding are not
+		// paragraph formatting.
+		bx.bg, bx.bgSet, bx.marginLeft = "", false, 0
+		bx.bStyle, bx.pad = [4]string{}, [4]float64{}
+	}
+	finishColors(&st, &bx)
+	if page {
+		if tag == "html" && st.sizeSet {
+			c.rootPt = st.emPt
+		}
+		c.hoistDefaults(&st)
+	}
+	return st, bx
+}
+
+// applyAuthorStyles applies the rules in c.matchBuf and then the inline
+// declarations: normal declarations first, then !important ones.
+func (c *conv) applyAuthorStyles(st *style, bx *box, parent *style, inline []css.Decl) {
 	ordered := c.declBuf[:0]
 	for pass := 0; pass < 2; pass++ {
 		important := pass == 1
@@ -351,16 +386,13 @@ func (c *conv) computeStyle(n *html.Node, parent *style) (style, box) {
 			}
 			d.Value = v
 		}
-		c.applyDecl(&st, &bx, parent, d)
+		c.applyDecl(st, bx, parent, d)
 	}
+}
 
-	page := tag == "html" || tag == "body"
-	if page {
-		// The page's background, margins, borders and padding are not
-		// paragraph formatting.
-		bx.bg, bx.bgSet, bx.marginLeft = "", false, 0
-		bx.bStyle, bx.pad = [4]string{}, [4]float64{}
-	}
+// finishColors records the element's background as the backdrop of its
+// content and blends a translucent text colour over it.
+func finishColors(st *style, bx *box) {
 	if bx.bgSet && bx.bg != "" {
 		st.backdrop = bx.bg
 	}
@@ -371,13 +403,6 @@ func (c *conv) computeStyle(n *html.Node, parent *style) (style, box) {
 		}
 		st.colorA = 0
 	}
-	if page {
-		if tag == "html" && st.sizeSet {
-			c.rootPt = st.emPt
-		}
-		c.hoistDefaults(&st)
-	}
-	return st, bx
 }
 
 // minContrast is the WCAG contrast ratio below which a text colour is taken
@@ -956,6 +981,16 @@ func (c *conv) applyDecl(st *style, bx *box, parent *style, d css.Decl) {
 		if tw, ok := c.lengthTwips(lv, st.emPt); ok {
 			st.textIndent = max(-maxIndent, min(tw, maxIndent))
 		}
+	case "content":
+		bx.content, bx.hasContent = val, true
+	case "position":
+		bx.absolute = lv == "absolute" || lv == "fixed"
+	case "counter-reset":
+		bx.counterReset = css.ParseCounterOps(val, 0)
+	case "counter-set":
+		bx.counterSet = css.ParseCounterOps(val, 0)
+	case "counter-increment":
+		bx.counterIncrement = css.ParseCounterOps(val, 1)
 	case "padding":
 		if v, ok := expand4(css.Fields(lv)); ok {
 			for side, x := range v {

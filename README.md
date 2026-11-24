@@ -6,7 +6,7 @@ Convert HTML to Word documents (`.docx`) in pure Go.
 - **Real Word structure.** Headings use heading styles, lists are numbered lists, tables have merged cells, links are hyperlinks.
 - **CSS aware.** Style attributes, `<style>` blocks and linked stylesheets are mapped onto Word formatting.
 - **Safe on untrusted input.** Malformed HTML is parsed the way browsers parse it. The library never reads files or the network unless you hand it a loader.
-- **One dependency:** `golang.org/x/net` (for the HTML5 parser).
+- **Two dependencies,** both from the Go project: `golang.org/x/net` (the HTML5 parser) and `golang.org/x/image` (the rasterizer that draws SVG).
 
 Status: v0.1, first version. The API may still change.
 
@@ -71,7 +71,8 @@ The command loads images and stylesheets only from the input file's directory (o
 | `blockquote` | Quote style, nested by indent |
 | `pre` | Source Code style, line breaks and tabs kept |
 | `table` | Tables with `colspan`, `rowspan`, `thead` repeat-header rows, `caption`, column widths, borders and shading, nested tables |
-| `img` | Embedded PNG, JPEG and GIF from `data:` URIs or the resource loader, sized from attributes, CSS or the image itself, and never wider than the page |
+| `img` | Embedded PNG, JPEG, GIF and SVG from `data:` URIs or the resource loader, sized from attributes, CSS or the image itself, and never wider than the page |
+| `svg` | Inline drawings become pictures: the drawing itself, which Word 2016 and later show, plus a PNG rendering for other readers. Scripts, event handlers and outside references are removed |
 | `figure`, `figcaption` | Picture kept with its Caption-style paragraph |
 | `hr` | Horizontal rule |
 | `title`, `meta`, `html lang` | Document properties and language |
@@ -85,7 +86,7 @@ Properties: `color`, `background-color`, `background`, `background-image`, `font
 
 Flex and grid layouts are approximated, since Word paragraphs cannot sit side by side. Items always stay separate. A row of short items stays on one line: spread items (`justify-content: space-between`) are split by tabs with a right tab stop at the margin, packed items by a space. A grid of short items gives one line per grid row with tab stops at the columns. Items holding block content (cards, panels) become one block each. `inline-block` boxes keep a space from the words around them.
 
-Bordered and shaded blocks such as callouts, notes and cards become Word paragraph borders, with padding as the distance between border and text; rounded corners and shadows are dropped. Backgrounds become shading. A gradient is drawn as the average of its colours, and translucent colours are blended over whatever is behind them, as on screen. Text whose colour would be practically invisible on the background actually drawn (for example light text meant for a page background or image, neither of which Word can show) falls back to Word's automatic colour, with a warning.
+Text from `::before` and `::after` (labels, bullets, checkboxes, and numbering built from CSS counters) is kept. Bordered and shaded blocks such as callouts, notes and cards become Word paragraph borders, with padding as the distance between border and text; rounded corners and shadows are dropped. Backgrounds become shading. A gradient is drawn as the average of its colours, and translucent colours are blended over whatever is behind them, as on screen. Text whose colour would be practically invisible on the background actually drawn (for example light text meant for a page background or image, neither of which Word can show) falls back to Word's automatic colour, with a warning.
 
 Custom properties (`--name: value`) and `var(--name, fallback)` work in all of these. Variables cascade and inherit as in a browser and are resolved where they are defined. A `var()` that cannot be resolved drops its declaration; browsers would reset the property instead.
 
@@ -93,7 +94,7 @@ Font, colour, size and line height set on `body` become the document's defaults 
 
 ## Not yet supported
 
-Footnotes, syntax highlighting, a reference `.docx` for custom styles, table of contents fields, SVG, MathML (its text is kept), floats and positioning, `calc()`, cell padding. Unsupported markup degrades to its text and is reported through `Warn`.
+Footnotes, syntax highlighting, a reference `.docx` for custom styles, table of contents fields, text in the PNG rendering of SVG, MathML (its text is kept), floats and positioning, `calc()`, cell padding. Unsupported markup degrades to its text and is reported through `Warn`.
 
 HTML nested more than 512 elements deep is rejected by the parser and `Convert` returns an error.
 

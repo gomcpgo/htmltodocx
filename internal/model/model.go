@@ -240,9 +240,12 @@ type Link struct {
 	Inlines []Inline
 }
 
-// Image is an inline picture. Width and Height are in EMUs.
+// Image is an inline picture. Width and Height are in EMUs. SVG, when set,
+// is the drawing that Data is a rendering of; readers that understand SVG
+// show it instead.
 type Image struct {
 	Data   *ImageData
+	SVG    *ImageData
 	Width  int64
 	Height int64
 	Alt    string
@@ -252,7 +255,7 @@ type Image struct {
 // Image nodes.
 type ImageData struct {
 	Bytes       []byte
-	Ext         string // "png", "jpeg" or "gif"
+	Ext         string // "png", "jpeg", "gif" or "svg"
 	ContentType string
 }
 
