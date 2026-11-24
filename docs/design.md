@@ -163,7 +163,7 @@ The schema imports the `xml:` namespace without saying where to find it. Add a s
 
 ### Not yet checked automatically
 
-Opening the files in Microsoft Word, Google Docs and LibreOffice. Schema validity and a clean round trip are strong evidence, but they are not the same as Word rendering the file as intended. Do this by hand before a release.
+Opening the files in Microsoft Word, Google Docs and LibreOffice. Schema validity and a clean round trip are strong evidence, but they are not the same as Word rendering the file as intended. Do this by hand before a release, and after any change to layout, boxes, tables or images. Check more than one application, because they differ: Word for the web draws paragraph borders only beside each paragraph's text, so a box made of several bordered paragraphs breaks apart, while Google Docs draws it whole.
 
 ## Roadmap
 
